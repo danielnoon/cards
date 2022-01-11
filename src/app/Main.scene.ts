@@ -7,10 +7,10 @@ import { Card, CardState } from "./gobjects/Card.go";
 import ICard from "./types/Card.model";
 import { Normalizer } from "./gobjects/Normalizer.go";
 import { Reset } from "./gobjects/Reset.go";
-import { Hand } from "./gobjects/Hand.go";
+import { Hand, HAND_CARD_Y } from "./gobjects/Hand.go";
 import { Slot, SlotState } from "./gobjects/Slot.go";
+import { GameManager } from "./engine/GameManager";
 
-const HAND_CARD_Y = Hand.Y + Hand.HEIGHT / 2 - Card.HEIGHT / 2;
 const PLAY_AREA_WIDTH = 205;
 const WIDTH = 450;
 const HEIGHT = 300;
@@ -56,52 +56,34 @@ const TEST_CARD_4: ICard = {
   cost: 3,
 };
 
+console.log(TEST_CARD_1, TEST_CARD_2, TEST_CARD_3, TEST_CARD_4);
+
 export class Main extends Scene {
+  manager = new GameManager();
   mouse = new Vector2(0, 0);
-  cards = [
-    new CardState(
-      0,
-      TEST_CARD_1,
-      new Vector2(SIDEBAR_WIDTH + 5, HAND_CARD_Y),
-      true
-    ),
-    new CardState(
-      1,
-      TEST_CARD_2,
-      new Vector2(SIDEBAR_WIDTH + 55, HAND_CARD_Y),
-      true
-    ),
-    new CardState(
-      2,
-      TEST_CARD_3,
-      new Vector2(SIDEBAR_WIDTH + 105, HAND_CARD_Y),
-      true
-    ),
-    new CardState(
-      3,
-      TEST_CARD_4,
-      new Vector2(SIDEBAR_WIDTH + 155, HAND_CARD_Y),
-      true
-    ),
-  ];
+  cards = [] as CardState[];
 
   slots = [
     new SlotState({
+      id: 0,
       position: new Vector2(SIDEBAR_WIDTH + 5, Hand.Y - Card.HEIGHT - 5),
     }),
     new SlotState({
+      id: 1,
       position: new Vector2(
         SIDEBAR_WIDTH + 5 * 2 + Card.WIDTH,
         Hand.Y - Card.HEIGHT - 5
       ),
     }),
     new SlotState({
+      id: 2,
       position: new Vector2(
         SIDEBAR_WIDTH + 5 * 3 + Card.WIDTH * 2,
         Hand.Y - Card.HEIGHT - 5
       ),
     }),
     new SlotState({
+      id: 3,
       position: new Vector2(
         SIDEBAR_WIDTH + 5 * 4 + Card.WIDTH * 3,
         Hand.Y - Card.HEIGHT - 5
@@ -116,10 +98,17 @@ export class Main extends Scene {
   selectedCard = -1;
   selectSlot = false;
   dragTarget: SlotState | null = null;
+  hoveringDeck = false;
+  clickingDeck = false;
 
   constructor() {
     super();
+
     console.log(this);
+
+    this.manager.listen("create-card", (card) => {
+      this.cards.push(card);
+    });
   }
 
   build(game: Game) {
@@ -132,23 +121,17 @@ export class Main extends Scene {
           height: game.height,
           ratio: WIDTH / HEIGHT,
           children: [
-            // new Rectangle({
-            //   x: 0,
-            //   y: 0,
-            //   width: SIDEBAR_WIDTH,
-            //   height: HEIGHT - Hand.HEIGHT,
-            //   color: "red",
-            // }),
-            // new Rectangle({
-            //   x: SIDEBAR_WIDTH + PLAY_AREA_WIDTH,
-            //   y: 0,
-            //   width: SIDEBAR_WIDTH,
-            //   height: HEIGHT - Hand.HEIGHT,
-            //   color: "blue",
-            // }),
             new Hand(),
             ...this.slots.map((slot) => new Slot(slot)),
             ...this.cards.map((state) => new Card(state)),
+            new Rectangle({
+              width: Card.WIDTH,
+              height: Card.HEIGHT,
+              x: WIDTH - Card.WIDTH - (Hand.HEIGHT - Card.HEIGHT) / 4,
+              y: HAND_CARD_Y,
+              color: "red",
+              id: "deck",
+            }),
             new Dot({
               position: this.mouse.add(new Vector2(-1, -1)),
               radius: 1,
@@ -194,13 +177,37 @@ export class Main extends Scene {
 
     game.canvasElement.style.cursor = "default";
 
-    if (game.input.mouseIsDown()) {
-      this.resetClick();
-      this.selectSlot = false;
-    }
+    const validMoves = this.manager.getValidMoves();
 
     let resetHover = true;
     let resetTarget = true;
+    let resetClick = false;
+
+    game.registerCollision("mouse", ".placeholder", (slot: Slot) => {
+      if (this.selectSlot && validMoves.includes(slot.state.id)) {
+        this.slots.forEach((slot) => (slot.hover = false));
+        if (this.dragging) {
+          this.dragTarget = slot.state;
+          resetTarget = false;
+        } else {
+          this.dragTarget = null;
+          const card = this.cards.find((card) => card.clicked);
+          if (card) {
+            if (game.input.mouseIsDown()) {
+              card.home = slot.state.position.clone();
+              card.selectable = false;
+              this.manager.placeCard(card, slot.state.id);
+            }
+          }
+        }
+        slot.state.hover = true;
+        resetHover = false;
+      }
+    });
+
+    if (game.input.mouseIsDown()) {
+      resetClick = true;
+    }
 
     game.registerCollision("mouse", ".card", (card: Card) => {
       const id = this.getCardId(card.id ?? "");
@@ -221,22 +228,14 @@ export class Main extends Scene {
       }
     });
 
-    game.registerCollision("mouse", ".placeholder", (slot: Slot) => {
-      if (this.selectSlot) {
-        this.slots.forEach((slot) => (slot.hover = false));
-        if (this.dragging) {
-          this.dragTarget = slot.state;
-          resetTarget = false;
-        } else {
-          this.dragTarget = null;
-          const card = this.cards.find((card) => card.clicked);
-          if (card) {
-            card.home = slot.state.position.clone();
-            card.selectable = false;
-          }
-        }
-        slot.state.hover = true;
-        resetHover = false;
+    game.registerCollision("mouse", "#deck", () => {
+      if (game.input.mouseIsDown() && this.hoveringDeck && !this.clickingDeck) {
+        this.clickingDeck = true;
+        this.hoveringDeck = false;
+        this.manager.drawCard(TEST_CARD_1, "hand");
+      } else if (!game.input.mouseIsDown()) {
+        this.hoveringDeck = true;
+        this.clickingDeck = false;
       }
     });
 
@@ -257,6 +256,7 @@ export class Main extends Scene {
         if (card) {
           card.home = this.dragTarget.position.clone();
           card.selectable = false;
+          this.manager.placeCard(card, this.dragTarget.id);
           this.dragTarget = null;
         }
       }
@@ -281,6 +281,10 @@ export class Main extends Scene {
       }
       if (resetTarget) {
         this.dragTarget = null;
+      }
+      if (resetClick) {
+        this.resetClick();
+        this.selectSlot = false;
       }
     });
   }

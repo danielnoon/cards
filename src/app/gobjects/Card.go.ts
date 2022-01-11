@@ -36,6 +36,59 @@ export class CardState {
     this.hover = hover;
   }
 
+  cancelAllAnimations() {
+    this.animations.forEach((animation) => animation.cancel());
+  }
+
+  animateIntoHand() {
+    this.cancelAllAnimations();
+
+    this.animations.push(
+      new Animation(
+        [
+          new Tween(this.tweenUpdate, {
+            from: new Vector2(this.position.x, 450),
+            to: this.home,
+            duration: 20,
+            ease: easeOutCubic,
+          }),
+        ],
+        {
+          onFinish: () => {
+            this.animationState = "idle";
+          },
+        }
+      )
+    );
+
+    this.animationState = "enter";
+  }
+
+  moveTo(position: Vector2, duration: number) {
+    this.cancelAllAnimations();
+
+    this.animations.push(
+      new Animation(
+        [
+          new Tween(this.tweenUpdate, {
+            from: this.position,
+            to: position,
+            duration,
+            ease: easeOutCubic,
+          }),
+        ],
+        {
+          onFinish: () => {
+            this.animationState = "idle";
+            this.home = position;
+          },
+        }
+      )
+    );
+
+    this.animationState = "move";
+  }
+
   update() {
     if (this.animationState === "idle" && !this.dragging) {
       if (this.position.x !== this.home.x && this.position.y !== this.home.y) {

@@ -1,5 +1,6 @@
 import { GObject } from "gamedeck/lib/GObject";
 import { Vector2 } from "gamedeck/lib/Utils";
+import { Card } from "./Card.go";
 
 const Y = 200;
 const WIDTH = 450;
@@ -31,3 +32,5 @@ export class Hand extends GObject {
     ctx.restore();
   }
 }
+
+export const HAND_CARD_Y = Hand.Y + Hand.HEIGHT / 2 - Card.HEIGHT / 2;

@@ -5,15 +5,18 @@ import { Card } from "./Card.go";
 interface Props {
   position: Vector2;
   hover?: boolean;
+  id: number;
 }
 
 export class SlotState {
   position: Vector2;
   hover: boolean;
+  id: number;
 
   constructor(props: Props) {
     this.position = props.position;
     this.hover = props.hover || false;
+    this.id = props.id;
   }
 }
 
