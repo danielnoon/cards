@@ -1,4 +1,5 @@
 import { CardState } from "../gobjects/Card.go";
+import ICard from "../types/Card.model";
 
 type Scale = [player: number, opponent: number];
 type PlayRow = [
@@ -16,7 +17,7 @@ export class State {
     player: [null, null, null, null],
     opponent: [null, null, null, null],
   } as Play;
-  deck: CardState[] = [];
+  deck: ICard[] = [];
   graveyard: CardState[] = [];
   scale: Scale = [0, 0];
   phase: "draw" | "play" | "end" = "draw";

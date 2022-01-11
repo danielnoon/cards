@@ -5,6 +5,7 @@ import ICard from "../types/Card.model";
 import { EventManager } from "./EventManager";
 import { State } from "./State";
 import { enumerate } from "itertools";
+import { TEST_CARD_1 } from "../test-data";
 
 const locations = {
   hand: (slot: number) => new Vector2(100, HAND_CARD_Y),
@@ -18,6 +19,10 @@ export class GameManager {
   state = new State();
   events = new EventManager();
   private currentId = 0;
+
+  get phase() {
+    return this.state.phase;
+  }
 
   getValidMoves() {
     return this.state.play.player
@@ -45,9 +50,13 @@ export class GameManager {
     return this.events.listen(event, callback);
   }
 
-  drawCard(card: ICard, row: "hand"): void;
-  drawCard(card: ICard, row: "player" | "opponent", slot: number): void;
-  drawCard(card: ICard, row: "player" | "opponent" | "hand", slot?: number) {
+  drawCard() {
+    this.addHandCard(this.state.deck.pop()!);
+  }
+
+  addCard(card: ICard, row: "hand"): void;
+  addCard(card: ICard, row: "player" | "opponent", slot: number): void;
+  addCard(card: ICard, row: "player" | "opponent" | "hand", slot?: number) {
     if (row === "hand") {
       this.addHandCard(card);
     } else {
@@ -84,5 +93,19 @@ export class GameManager {
     this.state.hand.push(state);
 
     state.animateIntoHand();
+  }
+
+  startGame() {
+    this.state.phase = "play";
+    this.state.turn = "player";
+    this.state.turnCount = 0;
+    this.state.play.player = [null, null, null, null];
+    this.state.play.opponent = [null, null, null, null];
+    this.state.hand = [];
+    this.state.graveyard = [];
+
+    for (const i of [0, 1, 2, 3]) {
+      setTimeout(() => this.addCard(TEST_CARD_1, "hand"), i * 500);
+    }
   }
 }

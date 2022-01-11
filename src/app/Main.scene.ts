@@ -10,53 +10,17 @@ import { Reset } from "./gobjects/Reset.go";
 import { Hand, HAND_CARD_Y } from "./gobjects/Hand.go";
 import { Slot, SlotState } from "./gobjects/Slot.go";
 import { GameManager } from "./engine/GameManager";
+import {
+  TEST_CARD_1,
+  TEST_CARD_2,
+  TEST_CARD_3,
+  TEST_CARD_4,
+} from "./test-data";
 
 const PLAY_AREA_WIDTH = 205;
 const WIDTH = 450;
 const HEIGHT = 300;
 const SIDEBAR_WIDTH = (WIDTH - PLAY_AREA_WIDTH) / 2;
-
-const TEST_CARD_1: ICard = {
-  id: 0,
-  image: "",
-  name: "",
-  attack: 1,
-  health: 2,
-  cost_type: "blood",
-  cost: 1,
-};
-
-const TEST_CARD_2: ICard = {
-  id: 1,
-  image: "",
-  name: "",
-  attack: 2,
-  health: 1,
-  cost_type: "blood",
-  cost: 1,
-};
-
-const TEST_CARD_3: ICard = {
-  id: 2,
-  image: "",
-  name: "",
-  attack: 2,
-  health: 2,
-  cost_type: "blood",
-  cost: 2,
-};
-
-const TEST_CARD_4: ICard = {
-  id: 3,
-  image: "",
-  name: "",
-  attack: 4,
-  health: 3,
-  cost_type: "blood",
-  cost: 3,
-};
-
-console.log(TEST_CARD_1, TEST_CARD_2, TEST_CARD_3, TEST_CARD_4);
 
 export class Main extends Scene {
   manager = new GameManager();
@@ -163,6 +127,7 @@ export class Main extends Scene {
   resetHover() {
     this.cards.forEach((card) => card.setHover(false));
     this.slots.forEach((slot) => (slot.hover = false));
+    this.hoveringDeck = false;
   }
 
   resetClick() {
@@ -229,13 +194,24 @@ export class Main extends Scene {
     });
 
     game.registerCollision("mouse", "#deck", () => {
-      if (game.input.mouseIsDown() && this.hoveringDeck && !this.clickingDeck) {
+      if (
+        game.input.mouseIsDown() &&
+        this.hoveringDeck &&
+        !this.clickingDeck &&
+        this.manager.phase === "draw"
+      ) {
         this.clickingDeck = true;
         this.hoveringDeck = false;
-        this.manager.drawCard(TEST_CARD_1, "hand");
+        this.manager.addCard(
+          [TEST_CARD_1, TEST_CARD_2, TEST_CARD_3, TEST_CARD_4][
+            Math.floor(Math.random() * 4)
+          ],
+          "hand"
+        );
       } else if (!game.input.mouseIsDown()) {
         this.hoveringDeck = true;
         this.clickingDeck = false;
+        resetHover = false;
       }
     });
 
