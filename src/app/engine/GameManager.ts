@@ -18,6 +18,11 @@ const locations = {
   opponent: (slot: number) => new Vector2(0, 0),
 };
 
+interface Sac {
+  state: CardState;
+  slot: number;
+}
+
 const HAND_WIDTH = 400 - Card.WIDTH - (Hand.HEIGHT - Card.HEIGHT) / 2;
 
 export class GameManager {
@@ -119,7 +124,6 @@ export class GameManager {
 
   removeCard(card: CardState) {
     const slot = this.getSlot(card);
-    console.log(slot);
     if (slot) {
       const [row, index] = slot;
       if (row === "hand") {
