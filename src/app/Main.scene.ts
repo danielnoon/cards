@@ -64,6 +64,9 @@ export class Main extends Scene {
   dragTarget: SlotState | null = null;
   hoveringDeck = false;
   clickingDeck = false;
+  sacrifice = false;
+  bloodNeeded = 0;
+  lastMouseState = 0;
 
   constructor() {
     super();
@@ -73,6 +76,12 @@ export class Main extends Scene {
 
     this.manager.listen("create-card", (card) => {
       this.cards.push(card);
+    });
+
+    this.manager.listen("remove-card", (card: CardState) => {
+      card.animateDeath().then(() => {
+        this.cards = this.cards.filter((c) => c.id !== card.id);
+      });
     });
 
     this.manager.startGame();
@@ -150,6 +159,7 @@ export class Main extends Scene {
     let resetHover = true;
     let resetTarget = true;
     let resetClick = false;
+    let dontResetClick = false;
 
     game.registerCollision("mouse", ".placeholder", (slot: Slot) => {
       if (this.selectSlot && validMoves.includes(slot.state.id)) {
@@ -161,20 +171,28 @@ export class Main extends Scene {
           this.dragTarget = null;
           const card = this.cards.find((card) => card.clicked);
           if (card) {
-            if (game.input.mouseIsDown()) {
+            if (
+              this.lastMouseState === 0 &&
+              game.input.mouseIsDown() &&
+              !this.sacrifice
+            ) {
               card.home = slot.state.position.clone();
               card.selectable = false;
               this.manager.placeCard(card, slot.state.id);
             }
           }
         }
-        slot.state.hover = true;
+        if (this.bloodNeeded === 0) {
+          slot.state.hover = true;
+        }
         resetHover = false;
       }
     });
 
     if (game.input.mouseIsDown()) {
-      resetClick = true;
+      if (this.lastMouseState === 0) {
+        resetClick = true;
+      }
     }
 
     game.registerCollision("mouse", ".card", (card: Card) => {
@@ -195,6 +213,31 @@ export class Main extends Scene {
         this.resetHover();
         cardState.setHover(true);
         resetHover = false;
+      }
+
+      if (
+        this.bloodNeeded > 0 &&
+        this.sacrifice &&
+        this.manager.getSlot(cardState)?.[0] === "player"
+      ) {
+        if (game.input.mouseIsDown() && this.lastMouseState === 0) {
+          this.bloodNeeded -= 1;
+          cardState.sacrificed = true;
+          resetClick = false;
+          dontResetClick = true;
+
+          if (this.bloodNeeded === 0) {
+            this.sacrifice = false;
+            this.cards
+              .filter((card) => card.sacrificed)
+              .forEach((card) => {
+                this.manager.removeCard(card);
+              });
+          }
+        } else {
+          cardState.hover = true;
+          resetHover = false;
+        }
       }
     });
 
@@ -223,11 +266,11 @@ export class Main extends Scene {
 
     if (this.dragging) {
       game.canvasElement.style.cursor = "grabbing";
-      const card = this.getDraggingCard();
-      if (card && this.mouse.add(this.dragStart.invert()).getMagnitude() > 10) {
-        card.position = this.mouse.add(this.liftedDelta.invert());
-        this.selectSlot = true;
-      }
+      // const card = this.getDraggingCard();
+      // if (card && this.mouse.add(this.dragStart.invert()).getMagnitude() > 10) {
+      //   card.position = this.mouse.add(this.liftedDelta.invert());
+      //   this.selectSlot = true;
+      // }
     }
 
     if (!game.input.mouseIsDown()) {
@@ -248,8 +291,21 @@ export class Main extends Scene {
         this.selectSlot = false;
         if (card) {
           if (this.mouse.add(this.dragStart.invert()).getMagnitude() < 10) {
-            card.clicked = true;
-            this.selectSlot = true;
+            if (card.data.cost_type !== "blood") {
+              card.clicked = true;
+              this.selectSlot = true;
+            }
+            if (
+              card.data.cost_type === "blood" &&
+              this.manager.hasBlood(card.data.cost)
+            ) {
+              card.clicked = true;
+              this.selectSlot = true;
+              if (card.data.cost > 0) {
+                this.bloodNeeded = card.data.cost;
+                this.sacrifice = true;
+              }
+            }
           }
         }
       }
@@ -265,9 +321,14 @@ export class Main extends Scene {
         this.dragTarget = null;
       }
       if (resetClick) {
-        this.resetClick();
-        this.selectSlot = false;
+        if (!dontResetClick) {
+          this.resetClick();
+          this.selectSlot = false;
+          this.bloodNeeded = 0;
+          this.sacrifice = false;
+        }
       }
+      this.lastMouseState = game.input.mouseIsDown() ? 1 : 0;
     });
   }
 }

@@ -16,14 +16,17 @@ const HEIGHT = 60;
 const dimensions = new Vector2(WIDTH, HEIGHT);
 
 add("/assets/blood.png");
+add("/assets/sac.png");
 
 export class CardState {
   public hover = false;
   public clicked = false;
   public dragging = false;
+  public sacrificed = false;
   public animation: Animation | null = null;
   public animationState = "idle";
   public home: Vector2;
+  public opacity = 1;
 
   constructor(
     public id: number,
@@ -38,6 +41,25 @@ export class CardState {
 
   setHover(hover: boolean) {
     this.hover = hover;
+  }
+
+  animateDeath() {
+    return new Promise<void>((res) => {
+      this.animation = new Animation(
+        [
+          new Tween((next) => (this.opacity = next), {
+            from: 1,
+            to: 0,
+            duration: 20,
+          }),
+        ],
+        {
+          onFinish: () => {
+            res();
+          },
+        }
+      );
+    });
   }
 
   animateFromTop() {
@@ -186,17 +208,32 @@ export class Card extends GObject {
   private data: ICard;
   private hover: boolean;
   private animationState: string;
+  private sacrificed: boolean;
+  private opacity: number;
 
-  constructor({ data, position, hover, id, animationState }: CardState) {
+  constructor({
+    data,
+    position,
+    hover,
+    id,
+    animationState,
+    sacrificed,
+    opacity,
+  }: CardState) {
     super({ position, dimensions, className: "card", id: `card-${id}` });
 
     this.data = data;
     this.hover = hover ?? false;
     this.animationState = animationState;
+    this.sacrificed = sacrificed;
+    this.opacity = opacity;
   }
 
   public render(ctx: CanvasRenderingContext2D) {
     ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    ctx.globalAlpha = this.opacity;
+
     ctx.fillStyle = "#e3efaf";
     ctx.fillRect(this.position.x, this.position.y, WIDTH, HEIGHT);
     ctx.fillStyle = "#7b8165";
@@ -245,7 +282,6 @@ export class Card extends GObject {
 
     if (this.data.cost_type === "blood") {
       ctx.scale(0.5, 0.5);
-      ctx.imageSmoothingEnabled = false;
 
       const start = new Vector2(
         this.position.x + WIDTH - 10,
@@ -261,6 +297,16 @@ export class Card extends GObject {
       }
 
       ctx.scale(2, 2);
+    }
+
+    if (this.sacrificed) {
+      ctx.fillStyle = "#00000099";
+      ctx.fillRect(this.position.x, this.position.y, WIDTH, HEIGHT);
+      ctx.drawImage(
+        get("/assets/sac.png"),
+        this.position.x + 3,
+        this.position.y + 3
+      );
     }
 
     ctx.restore();

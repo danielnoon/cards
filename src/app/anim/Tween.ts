@@ -1,24 +1,24 @@
 import { Vector2 } from "gamedeck/lib/Utils";
 import { AnimationStep } from "./Animation";
 
-interface TweenConfig {
-  from: Vector2;
-  to: Vector2;
+interface TweenConfig<T> {
+  from: T;
+  to: T;
   duration: number;
-  ease: (t: number) => number;
+  ease?: (t: number) => number;
   repeat?: boolean;
 }
 
-export class Tween implements AnimationStep {
-  from: Vector2;
-  to: Vector2;
+export class Tween<T extends number | Vector2> implements AnimationStep {
+  from: T;
+  to: T;
   duration: number;
   ease: (t: number) => number = (x) => x;
   repeat = true;
 
   done = false;
 
-  constructor(private callback: (next: Vector2) => void, config: TweenConfig) {
+  constructor(private callback: (next: T) => void, config: TweenConfig<T>) {
     const { from, to, duration, ease, repeat } = config;
     this.from = from;
     this.to = to;
@@ -38,12 +38,18 @@ export class Tween implements AnimationStep {
 
     const progress = this.ease(delta / this.duration);
 
-    const next = new Vector2(
-      this.from.x + (this.to.x - this.from.x) * progress,
-      this.from.y + (this.to.y - this.from.y) * progress
-    );
+    if (this.from instanceof Vector2 && this.to instanceof Vector2) {
+      const next = new Vector2(
+        this.from.x + (this.to.x - this.from.x) * progress,
+        this.from.y + (this.to.y - this.from.y) * progress
+      );
 
-    this.callback(next);
+      this.callback(next as T);
+    } else if (typeof this.from === "number" && typeof this.to === "number") {
+      const next = this.from + (this.to - this.from) * progress;
+
+      this.callback(next as T);
+    }
 
     const done = progress >= 1;
 

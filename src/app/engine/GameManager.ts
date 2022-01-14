@@ -44,18 +44,24 @@ export class GameManager {
     this.state.play.player[slot] = card;
     this.state.hand.splice(this.state.hand.indexOf(card), 1);
 
-    const c = this.state.hand.length;
-    const totalWidth = HAND_WIDTH;
-    const cardWidth = Card.WIDTH;
+    queueMicrotask(() => {
+      const c = this.state.hand.length;
+      const totalWidth = HAND_WIDTH;
+      const cardWidth = Card.WIDTH;
 
-    const gap = (totalWidth - cardWidth * c) / (c + 1);
+      const gap = (totalWidth - cardWidth * c) / (c + 1);
 
-    for (const [i, card] of enumerate(this.state.hand)) {
-      card.moveTo(new Vector2(gap + gap * i + cardWidth * i, HAND_CARD_Y), 30);
-    }
+      for (const [i, card] of enumerate(this.state.hand)) {
+        card.moveTo(
+          new Vector2(gap + gap * i + cardWidth * i, HAND_CARD_Y),
+          30
+        );
+      }
+    });
   }
 
   listen(event: "create-card", callback: (arg: CardState) => void): () => void;
+  listen(event: "remove-card", callback: (arg: CardState) => void): () => void;
   listen<T>(event: string, callback: (arg: T) => void) {
     return this.events.listen(event, callback);
   }
@@ -103,6 +109,45 @@ export class GameManager {
     this.state.hand.push(state);
 
     state.animateIntoHand();
+  }
+
+  killCard(card: CardState) {
+    this.state.graveyard.push(card);
+    this.removeCard(card);
+    this.state.bones += 1;
+  }
+
+  removeCard(card: CardState) {
+    const slot = this.getSlot(card);
+    console.log(slot);
+    if (slot) {
+      const [row, index] = slot;
+      if (row === "hand") {
+        this.state.hand.splice(index, 1);
+      } else {
+        this.state.play[row][index] = null;
+      }
+      this.events.dispatch("remove-card", card);
+    }
+  }
+
+  getSlot(card: CardState): ["player" | "hand" | "opponent", number] | null {
+    if (this.state.hand.includes(card)) {
+      return ["hand", this.state.hand.indexOf(card)];
+    } else if (this.state.play.player.includes(card)) {
+      return ["player", this.state.play.player.indexOf(card)];
+    } else if (this.state.play.opponent.includes(card)) {
+      return ["opponent", this.state.play.opponent.indexOf(card)];
+    } else {
+      return null;
+    }
+  }
+
+  hasBlood(n: number) {
+    return (
+      this.state.play.player.reduce((prev, card) => prev + (card ? 1 : 0), 0) >=
+      n
+    );
   }
 
   startGame() {
