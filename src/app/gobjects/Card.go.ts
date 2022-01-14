@@ -1,8 +1,10 @@
 import { GObject } from "gamedeck/lib/GObject";
 import { Vector2 } from "gamedeck/lib/Utils";
+import { range } from "itertools";
 import Animation from "../anim/Animation";
 import { easeInOutCubic, easeOutCubic } from "../anim/easing";
 import { Tween } from "../anim/Tween";
+import { add, get } from "../image-registry";
 import ICard from "../types/Card.model";
 
 const FONT = "6px 'Press Start 2P'";
@@ -12,6 +14,8 @@ const OUTLINE_WIDTH = 1;
 const WIDTH = 45;
 const HEIGHT = 60;
 const dimensions = new Vector2(WIDTH, HEIGHT);
+
+add("/assets/blood.png");
 
 export class CardState {
   public hover = false;
@@ -238,6 +242,26 @@ export class Card extends GObject {
       Card.marchShow += 1;
     }
     Card.march += 1;
+
+    if (this.data.cost_type === "blood") {
+      ctx.scale(0.5, 0.5);
+      ctx.imageSmoothingEnabled = false;
+
+      const start = new Vector2(
+        this.position.x + WIDTH - 10,
+        this.position.y + 1
+      );
+
+      for (let i of range(this.data.cost)) {
+        ctx.drawImage(
+          get("/assets/blood.png"),
+          start.x * 2 - 17 * i,
+          start.y * 2
+        );
+      }
+
+      ctx.scale(2, 2);
+    }
 
     ctx.restore();
   }

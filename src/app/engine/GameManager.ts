@@ -5,7 +5,12 @@ import ICard from "../types/Card.model";
 import { EventManager } from "./EventManager";
 import { State } from "./State";
 import { enumerate } from "itertools";
-import { TEST_CARD_1 } from "../test-data";
+import {
+  TEST_CARD_0,
+  TEST_CARD_1,
+  TEST_CARD_2,
+  TEST_CARD_3,
+} from "../test-data";
 
 const locations = {
   hand: (slot: number) => new Vector2(100, HAND_CARD_Y),
@@ -109,8 +114,9 @@ export class GameManager {
     this.state.hand = [];
     this.state.graveyard = [];
 
-    for (const i of [0, 1, 2, 3]) {
-      setTimeout(() => this.addCard(TEST_CARD_1, "hand"), i * 500);
-    }
+    setTimeout(() => this.addCard(TEST_CARD_0, "hand"), 500);
+    setTimeout(() => this.addCard(TEST_CARD_1, "hand"), 1000);
+    setTimeout(() => this.addCard(TEST_CARD_2, "hand"), 1500);
+    setTimeout(() => this.addCard(TEST_CARD_3, "hand"), 2000);
   }
 }
