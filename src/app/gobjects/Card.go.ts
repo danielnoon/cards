@@ -17,7 +17,7 @@ export class CardState {
   public hover = false;
   public clicked = false;
   public dragging = false;
-  public animations: Animation[] = [];
+  public animation: Animation | null = null;
   public animationState = "idle";
   public home: Vector2;
 
@@ -36,54 +36,63 @@ export class CardState {
     this.hover = hover;
   }
 
-  cancelAllAnimations() {
-    this.animations.forEach((animation) => animation.cancel());
+  animateFromTop() {
+    this.animation = new Animation([
+      new Tween(this.tweenUpdate, {
+        from: new Vector2(this.position.x, -HEIGHT),
+        to: this.position,
+        duration: 20,
+        ease: easeOutCubic,
+      }),
+    ]);
   }
 
   animateIntoHand() {
-    this.cancelAllAnimations();
+    this.animation?.cancel();
 
-    this.animations.push(
-      new Animation(
-        [
-          new Tween(this.tweenUpdate, {
-            from: new Vector2(this.position.x, 450),
-            to: this.home,
-            duration: 20,
-            ease: easeOutCubic,
-          }),
-        ],
-        {
-          onFinish: () => {
-            this.animationState = "idle";
-          },
-        }
-      )
+    this.animation = new Animation(
+      [
+        new Tween(this.tweenUpdate, {
+          from: new Vector2(this.position.x, 450),
+          to: this.home,
+          duration: 20,
+          ease: easeOutCubic,
+        }),
+      ],
+      {
+        onFinish: () => {
+          this.animationState = "idle";
+        },
+        onUpdate: () => {
+          this.animationState = "enter";
+        },
+      }
     );
 
     this.animationState = "enter";
   }
 
   moveTo(position: Vector2, duration: number) {
-    this.cancelAllAnimations();
+    this.animation?.cancel();
 
-    this.animations.push(
-      new Animation(
-        [
-          new Tween(this.tweenUpdate, {
-            from: this.position,
-            to: position,
-            duration,
-            ease: easeOutCubic,
-          }),
-        ],
-        {
-          onFinish: () => {
-            this.animationState = "idle";
-            this.home = position;
-          },
-        }
-      )
+    this.animation = new Animation(
+      [
+        new Tween(this.tweenUpdate, {
+          from: this.position,
+          to: position,
+          duration,
+          ease: easeOutCubic,
+        }),
+      ],
+      {
+        onFinish: () => {
+          this.animationState = "idle";
+          this.home = position;
+        },
+        onUpdate: () => {
+          this.animationState = "move";
+        },
+      }
     );
 
     this.animationState = "move";
@@ -94,81 +103,73 @@ export class CardState {
       if (this.position.x !== this.home.x && this.position.y !== this.home.y) {
         this.animationState = "return";
 
-        this.animations[0]?.cancel();
+        this.animation?.cancel();
 
-        this.animations.push(
-          new Animation(
-            [
-              new Tween(this.tweenUpdate, {
-                from: this.position,
-                to: this.home,
-                duration: 20,
-                ease: easeOutCubic,
-              }),
-            ],
-            {
-              onFinish: () => {
-                this.animationState = "idle";
-              },
-            }
-          )
+        this.animation = new Animation(
+          [
+            new Tween(this.tweenUpdate, {
+              from: this.position,
+              to: this.home,
+              duration: 20,
+              ease: easeOutCubic,
+            }),
+          ],
+          {
+            onFinish: () => {
+              this.animationState = "idle";
+            },
+          }
         );
       }
     }
 
     if (this.clicked && this.animationState === "idle") {
-      this.animations.push(
-        new Animation(
-          [
-            new Tween(this.tweenUpdate, {
-              from: this.position,
-              to: this.position.add(new Vector2(0, -10)),
-              duration: 20,
-              ease: easeOutCubic,
-              repeat: false,
-            }),
-            new Tween(this.tweenUpdate, {
-              from: this.position.add(new Vector2(0, -10)),
-              to: this.position.add(new Vector2(0, -5)),
-              duration: 50,
-              ease: easeInOutCubic,
-            }),
-            new Tween(this.tweenUpdate, {
-              from: this.position.add(new Vector2(0, -5)),
-              to: this.position.add(new Vector2(0, -10)),
-              duration: 50,
-              ease: easeInOutCubic,
-            }),
-          ],
-          { repeat: true }
-        )
+      this.animation = new Animation(
+        [
+          new Tween(this.tweenUpdate, {
+            from: this.position,
+            to: this.position.add(new Vector2(0, -10)),
+            duration: 20,
+            ease: easeOutCubic,
+            repeat: false,
+          }),
+          new Tween(this.tweenUpdate, {
+            from: this.position.add(new Vector2(0, -10)),
+            to: this.position.add(new Vector2(0, -5)),
+            duration: 50,
+            ease: easeInOutCubic,
+          }),
+          new Tween(this.tweenUpdate, {
+            from: this.position.add(new Vector2(0, -5)),
+            to: this.position.add(new Vector2(0, -10)),
+            duration: 50,
+            ease: easeInOutCubic,
+          }),
+        ],
+        { repeat: true }
       );
 
       this.animationState = "selected";
     }
 
     if (!this.clicked && this.animationState === "selected") {
-      this.animations[0].cancel();
+      this.animation?.cancel();
 
-      this.animations.push(
-        new Animation([
-          new Tween(this.tweenUpdate, {
-            from: this.position,
-            to: this.home,
-            duration: 10,
-            ease: easeInOutCubic,
-          }),
-        ])
-      );
+      this.animation = new Animation([
+        new Tween(this.tweenUpdate, {
+          from: this.position,
+          to: this.home,
+          duration: 10,
+          ease: easeInOutCubic,
+        }),
+      ]);
 
       this.animationState = "idle";
     }
 
-    this.animations.forEach((animation) => {
-      if (animation.update()) {
-        this.animations.splice(this.animations.indexOf(animation), 1);
-      }
-    });
+    if (this.animation?.update()) {
+      this.animation = null;
+    }
   }
 }
 

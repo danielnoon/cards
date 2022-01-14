@@ -68,11 +68,14 @@ export class Main extends Scene {
   constructor() {
     super();
 
-    console.log(this);
+    (window as any).scene = this;
+    (window as any).manager = this.manager;
 
     this.manager.listen("create-card", (card) => {
       this.cards.push(card);
     });
+
+    this.manager.startGame();
   }
 
   build(game: Game) {
@@ -177,6 +180,7 @@ export class Main extends Scene {
     game.registerCollision("mouse", ".card", (card: Card) => {
       const id = this.getCardId(card.id ?? "");
       const cardState = this.getCardById(id)!;
+
       if (game.input.mouseIsDown() && !this.dragging && cardState.selectable) {
         this.dragging = true;
         this.liftedCard = id;
@@ -185,6 +189,7 @@ export class Main extends Scene {
 
         this.dragStart = this.mouse;
       }
+
       if (!this.dragging && !cardState.clicked && cardState.selectable) {
         game.canvasElement.style.cursor = "grab";
         this.resetHover();
@@ -208,6 +213,7 @@ export class Main extends Scene {
           ],
           "hand"
         );
+        this.manager.phase = "play";
       } else if (!game.input.mouseIsDown()) {
         this.hoveringDeck = true;
         this.clickingDeck = false;

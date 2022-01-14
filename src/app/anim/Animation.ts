@@ -6,6 +6,7 @@ export interface AnimationStep {
 interface AnimationConfig {
   repeat?: boolean;
   onFinish?: () => void;
+  onUpdate?: () => void;
 }
 
 export default class Animation {
@@ -32,6 +33,8 @@ export default class Animation {
     if (this.doPause) {
       return false;
     }
+
+    this.config?.onUpdate?.();
 
     const stepDone = this.steps[this.step].update(this.delta);
 

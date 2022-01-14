@@ -24,6 +24,11 @@ export class GameManager {
     return this.state.phase;
   }
 
+  set phase(phase: "draw" | "play" | "end") {
+    this.state.phase = phase;
+    this.events.dispatch("phase-change", phase);
+  }
+
   getValidMoves() {
     return this.state.play.player
       .map((card, i) => (card ? null : i))
