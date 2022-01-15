@@ -235,6 +235,12 @@ export class Main extends Scene {
 
     game.canvasElement.style.cursor = "default";
 
+    for (const card of this.cards) {
+      if (card.dead) {
+        this.cards = this.cards.filter((c) => c.id !== card.id);
+      }
+    }
+
     if (this.manager.state.message) {
       game.setTimer("clear-message", "2000", () => {
         this.manager.state.message = "";

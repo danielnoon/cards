@@ -69,6 +69,10 @@ export class GameManager {
     this.sync.listen("commit_turn_success", () => {
       this.fight("player");
     });
+
+    this.sync.listen("error", ({ message }) => {
+      this.state.error = message;
+    });
   }
 
   get phase() {

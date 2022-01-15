@@ -28,6 +28,7 @@ export class CardState {
   public home: Vector2;
   public opacity = 1;
   public damage = 0;
+  public dead = false;
 
   constructor(
     public id: number,
@@ -56,6 +57,7 @@ export class CardState {
         ],
         {
           onFinish: () => {
+            this.dead = true;
             res();
           },
         }
@@ -131,8 +133,8 @@ export class CardState {
         ],
         {
           onFinish: () => {
-            res();
             this.animationState = "idle";
+            res();
           },
         }
       );

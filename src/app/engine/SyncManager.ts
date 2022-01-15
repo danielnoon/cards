@@ -65,6 +65,7 @@ export class SyncManager {
       this.connecting = false;
       this.waiting = true;
     };
+
     this.socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
       this.events.dispatch(data.type, data);
