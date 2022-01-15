@@ -5,7 +5,7 @@ import { add, get } from "../image-registry";
 const BACKGROUND_NORMAL = "#352a29";
 const BACKGROUND_HOVER = "#57392f";
 const WIDTH = 100;
-const HEIGHT = 50;
+const HEIGHT = 40;
 
 add("/assets/bell.png");
 add("/assets/bell-active.png");
@@ -21,7 +21,7 @@ export class Bell extends GObject {
   constructor(private state: BellState) {
     super({
       position: new Vector2(10, 50),
-      dimensions: new Vector2(100, 50),
+      dimensions: new Vector2(WIDTH, HEIGHT),
       id: "bell",
     });
   }

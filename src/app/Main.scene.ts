@@ -8,13 +8,7 @@ import { Normalizer } from "./gobjects/Normalizer.go";
 import { Reset } from "./gobjects/Reset.go";
 import { Hand, HAND_CARD_Y } from "./gobjects/Hand.go";
 import { Slot, SlotState } from "./gobjects/Slot.go";
-import { GameManager, Sac } from "./engine/GameManager";
-import {
-  TEST_CARD_1,
-  TEST_CARD_2,
-  TEST_CARD_3,
-  TEST_CARD_4,
-} from "./test-data";
+import { GameManager } from "./engine/GameManager";
 import { Message } from "./gobjects/Message.go";
 import { Bell, BellState } from "./gobjects/Bell.go";
 
@@ -33,6 +27,7 @@ export class Main extends Scene {
     new SlotState({
       id: 0,
       position: new Vector2(SIDEBAR_WIDTH + 5, Hand.Y - Card.HEIGHT - 5),
+      type: "player",
     }),
     new SlotState({
       id: 1,
@@ -40,6 +35,7 @@ export class Main extends Scene {
         SIDEBAR_WIDTH + 5 * 2 + Card.WIDTH,
         Hand.Y - Card.HEIGHT - 5
       ),
+      type: "player",
     }),
     new SlotState({
       id: 2,
@@ -47,6 +43,7 @@ export class Main extends Scene {
         SIDEBAR_WIDTH + 5 * 3 + Card.WIDTH * 2,
         Hand.Y - Card.HEIGHT - 5
       ),
+      type: "player",
     }),
     new SlotState({
       id: 3,
@@ -54,6 +51,39 @@ export class Main extends Scene {
         SIDEBAR_WIDTH + 5 * 4 + Card.WIDTH * 3,
         Hand.Y - Card.HEIGHT - 5
       ),
+      type: "player",
+    }),
+  ];
+
+  opponentSlots = [
+    new SlotState({
+      id: 4,
+      position: new Vector2(SIDEBAR_WIDTH + 5, Hand.Y - Card.HEIGHT * 2 - 10),
+      type: "opponent",
+    }),
+    new SlotState({
+      id: 5,
+      position: new Vector2(
+        SIDEBAR_WIDTH + 5 * 2 + Card.WIDTH,
+        Hand.Y - Card.HEIGHT * 2 - 10
+      ),
+      type: "opponent",
+    }),
+    new SlotState({
+      id: 6,
+      position: new Vector2(
+        SIDEBAR_WIDTH + 5 * 3 + Card.WIDTH * 2,
+        Hand.Y - Card.HEIGHT * 2 - 10
+      ),
+      type: "opponent",
+    }),
+    new SlotState({
+      id: 7,
+      position: new Vector2(
+        SIDEBAR_WIDTH + 5 * 4 + Card.WIDTH * 3,
+        Hand.Y - Card.HEIGHT * 2 - 10
+      ),
+      type: "opponent",
     }),
   ];
 
@@ -92,6 +122,30 @@ export class Main extends Scene {
     this.manager.startGame();
   }
 
+  getMessages(): Message[] {
+    return [
+      this.manager.sync.connecting &&
+        new Message({ message: "Connecting...", severity: "info" }),
+      this.manager.sync.waiting &&
+        new Message({ message: "Waiting for opponent...", severity: "info" }),
+      this.manager.sync.error &&
+        new Message({
+          message: this.manager.sync.error,
+          severity: "error",
+        }),
+      this.manager.state.message &&
+        new Message({
+          message: this.manager.state.message,
+          severity: "info",
+        }),
+      this.manager.state.error &&
+        new Message({
+          message: this.manager.state.error,
+          severity: "error",
+        }),
+    ].filter((m) => m) as Message[];
+  }
+
   build(game: Game) {
     return new Background({
       path: "/assets/wood.jpg",
@@ -103,9 +157,11 @@ export class Main extends Scene {
           ratio: WIDTH / HEIGHT,
           children: [
             new Message({ message: this.errorMessage, severity: "error" }),
+            ...this.getMessages(),
             new Bell(this.bellState),
             new Hand(),
             ...this.slots.map((slot) => new Slot(slot)),
+            ...this.opponentSlots.map((slot) => new Slot(slot)),
             ...this.cards.map((state) => new Card(state)),
             new Rectangle({
               width: Card.WIDTH,
@@ -164,6 +220,12 @@ export class Main extends Scene {
 
     game.canvasElement.style.cursor = "default";
 
+    if (this.manager.state.message) {
+      game.setTimer("clear-message", "10000", () => {
+        this.manager.state.message = "";
+      });
+    }
+
     if (this.manager.phase === "play") {
       this.bellState.disabled = false;
     } else {
@@ -174,10 +236,11 @@ export class Main extends Scene {
 
     let resetHover = true;
     let resetTarget = true;
+    let resetBell = true;
     let resetClick = false;
     let dontResetClick = false;
 
-    game.registerCollision("mouse", ".placeholder", (slot: Slot) => {
+    game.registerCollision("mouse", ".player-slot", (slot: Slot) => {
       if (this.selectSlot && validMoves.includes(slot.state.id)) {
         this.slots.forEach((slot) => (slot.hover = false));
         if (this.dragging) {
@@ -195,6 +258,7 @@ export class Main extends Scene {
               card.home = slot.state.position.clone();
               card.selectable = false;
               this.manager.placeCard(card, slot.state.id, this.sacrifices);
+              this.sacrifices = [];
               this.resetClick();
               this.forcePlay = false;
               card.clicked = false;
@@ -223,7 +287,8 @@ export class Main extends Scene {
         game.input.mouseIsDown() &&
         !this.dragging &&
         cardState.selectable &&
-        !this.forcePlay
+        !this.forcePlay &&
+        this.manager.phase === "play"
       ) {
         this.dragging = true;
         this.liftedCard = id;
@@ -237,7 +302,8 @@ export class Main extends Scene {
         !this.dragging &&
         !cardState.clicked &&
         cardState.selectable &&
-        !this.forcePlay
+        !this.forcePlay &&
+        this.manager.phase === "play"
       ) {
         this.resetHover();
         cardState.hover = true;
@@ -283,13 +349,7 @@ export class Main extends Scene {
       ) {
         this.clickingDeck = true;
         this.hoveringDeck = false;
-        this.manager.addCard(
-          [TEST_CARD_1, TEST_CARD_2, TEST_CARD_3, TEST_CARD_4][
-            Math.floor(Math.random() * 4)
-          ],
-          "hand"
-        );
-        this.manager.phase = "play";
+        this.manager.drawCard();
       } else if (!game.input.mouseIsDown()) {
         this.hoveringDeck = true;
         this.clickingDeck = false;
@@ -299,13 +359,21 @@ export class Main extends Scene {
 
     game.registerCollision("mouse", "#bell", () => {
       if (!this.bellState.disabled) {
+        resetBell = false;
         if (game.input.mouseIsDown() && this.lastMouseState === 0) {
-          this.bellState.clicked = true;
-          resetClick = false;
+          if (!this.bellState.clicked) {
+            this.bellState.clicked = true;
+            resetClick = false;
+          }
         } else if (!game.input.mouseIsDown()) {
-          this.bellState.clicked = false;
-          this.bellState.hover = true;
-          resetHover = false;
+          if (this.bellState.clicked) {
+            this.manager.commitPlay();
+            this.bellState.clicked = false;
+          } else {
+            this.bellState.clicked = false;
+            this.bellState.hover = true;
+            resetHover = false;
+          }
         }
       }
     });
@@ -347,7 +415,7 @@ export class Main extends Scene {
                 }
               } else {
                 this.errorMessage = "You don't have enough blood!";
-                game.setTimer("resetError", "1000", () => {
+                game.setTimer("resetError", "2000", () => {
                   this.errorMessage = "";
                 });
               }
@@ -373,6 +441,9 @@ export class Main extends Scene {
           this.bloodNeeded = 0;
           this.sacrifice = false;
         }
+      }
+      if (resetBell) {
+        this.bellState.clicked = false;
       }
       this.lastMouseState = game.input.mouseIsDown() ? 1 : 0;
     });

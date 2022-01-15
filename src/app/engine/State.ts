@@ -20,7 +20,7 @@ export class State {
   deck: ICard[] = [];
   graveyard: CardState[] = [];
   scale: Scale = [0, 0];
-  phase: "draw" | "play" | "end" = "draw";
+  phase: "draw" | "play" | "end" | "attack" | "starting" = "starting";
   bones = 0;
   gems = {
     emerald: 0,
@@ -28,4 +28,6 @@ export class State {
     sapphire: 0,
   };
   turnCount = 0;
+  message = "";
+  error = "";
 }

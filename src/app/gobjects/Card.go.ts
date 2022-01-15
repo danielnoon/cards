@@ -48,7 +48,7 @@ export class CardState {
       this.animation = new Animation(
         [
           new Tween((next) => (this.opacity = next), {
-            from: 1,
+            from: this.opacity,
             to: 0,
             duration: 20,
           }),
@@ -63,14 +63,23 @@ export class CardState {
   }
 
   animateFromTop() {
-    this.animation = new Animation([
-      new Tween(this.tweenUpdate, {
-        from: new Vector2(this.position.x, -HEIGHT),
-        to: this.position,
-        duration: 20,
-        ease: easeOutCubic,
-      }),
-    ]);
+    return new Promise<void>((res) => {
+      this.animation = new Animation(
+        [
+          new Tween(this.tweenUpdate, {
+            from: new Vector2(this.position.x, -HEIGHT),
+            to: this.position,
+            duration: 20,
+            ease: easeOutCubic,
+          }),
+        ],
+        {
+          onFinish: () => {
+            res();
+          },
+        }
+      );
+    });
   }
 
   animateIntoHand() {
@@ -164,6 +173,7 @@ export class CardState {
             to: this.position.add(new Vector2(0, -5)),
             duration: 50,
             ease: easeInOutCubic,
+            repeat: false,
           }),
           new Tween(this.tweenUpdate, {
             from: this.position.add(new Vector2(0, -5)),
@@ -308,6 +318,14 @@ export class Card extends GObject {
         this.position.y + 3
       );
     }
+
+    ctx.font = '5px "Press Start 2P"';
+
+    ctx.fillText(
+      this.data.name,
+      this.position.x + PADDING,
+      this.position.y + PADDING * 4
+    );
 
     ctx.restore();
   }

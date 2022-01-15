@@ -6,17 +6,20 @@ interface Props {
   position: Vector2;
   hover?: boolean;
   id: number;
+  type: "player" | "opponent";
 }
 
 export class SlotState {
   position: Vector2;
   hover: boolean;
   id: number;
+  type: "player" | "opponent";
 
   constructor(props: Props) {
     this.position = props.position;
     this.hover = props.hover || false;
     this.id = props.id;
+    this.type = props.type;
   }
 }
 
@@ -24,12 +27,12 @@ export class Slot extends GObject {
   public state: SlotState;
 
   constructor(state: SlotState) {
-    const { position } = state;
+    const { position, type } = state;
 
     super({
       position,
       dimensions: new Vector2(Card.WIDTH, Card.HEIGHT),
-      className: "placeholder",
+      className: `${type}-slot`,
     });
 
     this.state = state;
