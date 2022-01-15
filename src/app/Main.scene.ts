@@ -8,7 +8,7 @@ import { Normalizer } from "./gobjects/Normalizer.go";
 import { Reset } from "./gobjects/Reset.go";
 import { Hand, HAND_CARD_Y } from "./gobjects/Hand.go";
 import { Slot, SlotState } from "./gobjects/Slot.go";
-import { GameManager } from "./engine/GameManager";
+import { GameManager, Sac } from "./engine/GameManager";
 import {
   TEST_CARD_1,
   TEST_CARD_2,
@@ -16,6 +16,7 @@ import {
   TEST_CARD_4,
 } from "./test-data";
 import { Message } from "./gobjects/Message.go";
+import { Bell, BellState } from "./gobjects/Bell.go";
 
 const PLAY_AREA_WIDTH = 205;
 const WIDTH = 450;
@@ -26,6 +27,7 @@ export class Main extends Scene {
   manager = new GameManager();
   mouse = new Vector2(0, 0);
   cards = [] as CardState[];
+  bellState = new BellState();
 
   slots = [
     new SlotState({
@@ -69,6 +71,7 @@ export class Main extends Scene {
   lastMouseState = 0;
   errorMessage = "";
   forcePlay = false;
+  sacrifices = [] as number[];
 
   constructor() {
     super();
@@ -100,6 +103,7 @@ export class Main extends Scene {
           ratio: WIDTH / HEIGHT,
           children: [
             new Message({ message: this.errorMessage, severity: "error" }),
+            new Bell(this.bellState),
             new Hand(),
             ...this.slots.map((slot) => new Slot(slot)),
             ...this.cards.map((state) => new Card(state)),
@@ -143,10 +147,13 @@ export class Main extends Scene {
     this.cards.forEach((card) => card.setHover(false));
     this.slots.forEach((slot) => (slot.hover = false));
     this.hoveringDeck = false;
+    this.bellState.hover = false;
   }
 
   resetClick() {
     this.cards.forEach((card) => (card.clicked = false));
+    this.cards.forEach((card) => (card.sacrificed = false));
+    this.bellState.clicked = false;
   }
 
   update(game: Game) {
@@ -156,6 +163,12 @@ export class Main extends Scene {
       .add(Normalizer.transform.invert());
 
     game.canvasElement.style.cursor = "default";
+
+    if (this.manager.phase === "play") {
+      this.bellState.disabled = false;
+    } else {
+      this.bellState.disabled = true;
+    }
 
     const validMoves = this.manager.getValidMoves();
 
@@ -181,9 +194,11 @@ export class Main extends Scene {
             ) {
               card.home = slot.state.position.clone();
               card.selectable = false;
-              this.manager.placeCard(card, slot.state.id);
+              this.manager.placeCard(card, slot.state.id, this.sacrifices);
               this.resetClick();
               this.forcePlay = false;
+              card.clicked = false;
+              resetClick = true;
             }
           }
         }
@@ -218,9 +233,14 @@ export class Main extends Scene {
         this.dragStart = this.mouse;
       }
 
-      if (!this.dragging && !cardState.clicked && cardState.selectable) {
+      if (
+        !this.dragging &&
+        !cardState.clicked &&
+        cardState.selectable &&
+        !this.forcePlay
+      ) {
         this.resetHover();
-        cardState.setHover(true);
+        cardState.hover = true;
         resetHover = false;
       }
 
@@ -241,6 +261,7 @@ export class Main extends Scene {
             this.cards
               .filter((card) => card.sacrificed)
               .forEach((card) => {
+                this.sacrifices.push(this.manager.getSlot(card)![1]);
                 this.manager.removeCard(card);
               });
           }
@@ -276,13 +297,18 @@ export class Main extends Scene {
       }
     });
 
-    if (this.dragging) {
-      // const card = this.getDraggingCard();
-      // if (card && this.mouse.add(this.dragStart.invert()).getMagnitude() > 10) {
-      //   card.position = this.mouse.add(this.liftedDelta.invert());
-      //   this.selectSlot = true;
-      // }
-    }
+    game.registerCollision("mouse", "#bell", () => {
+      if (!this.bellState.disabled) {
+        if (game.input.mouseIsDown() && this.lastMouseState === 0) {
+          this.bellState.clicked = true;
+          resetClick = false;
+        } else if (!game.input.mouseIsDown()) {
+          this.bellState.clicked = false;
+          this.bellState.hover = true;
+          resetHover = false;
+        }
+      }
+    });
 
     if (!game.input.mouseIsDown()) {
       this.dragging = false;
@@ -292,10 +318,13 @@ export class Main extends Scene {
         if (card) {
           card.home = this.dragTarget.position.clone();
           card.selectable = false;
-          this.manager.placeCard(card, this.dragTarget.id);
+          this.manager.placeCard(card, this.dragTarget.id, this.sacrifices);
+          this.sacrifices = [];
           this.resetClick();
           this.forcePlay = false;
           this.dragTarget = null;
+          resetClick = true;
+          card.clicked = false;
         }
       }
       if (this.liftedCard !== -1) {

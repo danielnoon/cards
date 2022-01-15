@@ -11,6 +11,7 @@ import {
   TEST_CARD_2,
   TEST_CARD_3,
 } from "../test-data";
+import Move from "../types/Move.model";
 
 const locations = {
   hand: (slot: number) => new Vector2(100, HAND_CARD_Y),
@@ -18,7 +19,7 @@ const locations = {
   opponent: (slot: number) => new Vector2(0, 0),
 };
 
-interface Sac {
+export interface Sac {
   state: CardState;
   slot: number;
 }
@@ -29,6 +30,7 @@ export class GameManager {
   state = new State();
   events = new EventManager();
   private currentId = 0;
+  private moves: Move[] = [];
 
   get phase() {
     return this.state.phase;
@@ -45,7 +47,21 @@ export class GameManager {
       .filter((i) => i !== null);
   }
 
-  placeCard(card: CardState, slot: number) {
+  placeCard(card: CardState, slot: number, sacrifices: number[] = []) {
+    if (card.data.cost_type === "blood") {
+      if (sacrifices.length < card.data.cost) {
+        alert("Not enough blood.");
+        return;
+      } else {
+        this.moves.push({
+          type: "place_card",
+          id: card.id,
+          position: this.getSlot(card)![1],
+          sacrifices: sacrifices.map((sac) => sac),
+        });
+      }
+    }
+
     this.state.play.player[slot] = card;
     this.state.hand.splice(this.state.hand.indexOf(card), 1);
 
