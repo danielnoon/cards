@@ -45,6 +45,7 @@ export class GameManager {
       this.phase = "play";
       if (data.actions) {
         await this.executeActions(data.actions);
+        await this.fight("opponent");
         this.state.message = "Your turn.";
       }
     });
@@ -52,6 +53,7 @@ export class GameManager {
     this.sync.listen("begin_turn", async (data) => {
       this.phase = data.phase;
       await this.executeActions(data.actions);
+      await this.fight("opponent");
       this.state.message = "Your turn.";
     });
 
@@ -62,6 +64,10 @@ export class GameManager {
         this.addHandCard(card.id, card.data);
       }
       this.state.phase = "play";
+    });
+
+    this.sync.listen("commit_turn_success", () => {
+      this.fight("player");
     });
   }
 
@@ -97,6 +103,44 @@ export class GameManager {
       const executor = this.actionExecutors.get(action.type);
       if (executor) {
         await executor(action);
+      }
+    }
+  }
+
+  async fight(player: "player" | "opponent") {
+    if (player === "player") {
+      for (const [slot, card] of enumerate(this.state.play.player)) {
+        if (card) {
+          card.animateAttack("opponent");
+          const opposingCard = this.state.play.opponent[slot];
+
+          if (opposingCard) {
+            opposingCard.damage += card.data.attack;
+            if (opposingCard.data.health <= opposingCard.damage) {
+              await opposingCard.animateDeath();
+              this.killCard(opposingCard);
+            }
+          } else {
+            this.state.scale[1] += card.data.attack;
+          }
+        }
+      }
+    } else {
+      for (const [slot, card] of enumerate(this.state.play.opponent)) {
+        if (card) {
+          card.animateAttack("player");
+          const opposingCard = this.state.play.player[slot];
+
+          if (opposingCard) {
+            opposingCard.damage += card.data.attack;
+            if (opposingCard.data.health <= opposingCard.damage) {
+              await opposingCard.animateDeath();
+              this.killCard(opposingCard);
+            }
+          } else {
+            this.state.scale[0] += card.data.attack;
+          }
+        }
       }
     }
   }

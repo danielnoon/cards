@@ -27,6 +27,7 @@ export class CardState {
   public animationState = "idle";
   public home: Vector2;
   public opacity = 1;
+  public damage = 0;
 
   constructor(
     public id: number,
@@ -105,6 +106,37 @@ export class CardState {
     );
 
     this.animationState = "enter";
+  }
+
+  animateAttack(target: "player" | "opponent") {
+    this.animation?.cancel();
+
+    const mod = target === "player" ? 1 : -1;
+
+    return new Promise<void>((res) => {
+      this.animation = new Animation(
+        [
+          new Tween(this.tweenUpdate, {
+            from: this.position,
+            to: new Vector2(this.position.x, this.position.y + mod * 20),
+            duration: 20,
+            ease: easeOutCubic,
+          }),
+          new Tween(this.tweenUpdate, {
+            from: new Vector2(this.position.x, this.position.y + mod * 20),
+            to: this.position,
+            duration: 20,
+            ease: easeOutCubic,
+          }),
+        ],
+        {
+          onFinish: () => {
+            res();
+            this.animationState = "idle";
+          },
+        }
+      );
+    });
   }
 
   moveTo(position: Vector2, duration: number) {
@@ -220,6 +252,7 @@ export class Card extends GObject {
   private animationState: string;
   private sacrificed: boolean;
   private opacity: number;
+  private damage: number;
 
   constructor({
     data,
@@ -229,6 +262,7 @@ export class Card extends GObject {
     animationState,
     sacrificed,
     opacity,
+    damage,
   }: CardState) {
     super({ position, dimensions, className: "card", id: `card-${id}` });
 
@@ -237,6 +271,7 @@ export class Card extends GObject {
     this.animationState = animationState;
     this.sacrificed = sacrificed;
     this.opacity = opacity;
+    this.damage = damage;
   }
 
   public render(ctx: CanvasRenderingContext2D) {
@@ -267,8 +302,10 @@ export class Card extends GObject {
 
     const { width: healthWidth } = ctx.measureText(this.data.health.toString());
 
+    const health = Math.max(0, this.data.health - this.damage);
+
     ctx.fillText(
-      this.data.health.toString(),
+      health.toString(),
       this.position.x + WIDTH - healthWidth - PADDING,
       this.position.y + this.dimensions.y - PADDING
     );

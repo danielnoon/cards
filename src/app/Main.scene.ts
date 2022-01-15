@@ -11,6 +11,7 @@ import { Slot, SlotState } from "./gobjects/Slot.go";
 import { GameManager } from "./engine/GameManager";
 import { Message } from "./gobjects/Message.go";
 import { Bell, BellState } from "./gobjects/Bell.go";
+import { Text } from "gamedeck/lib/gobjects/Text";
 
 const PLAY_AREA_WIDTH = 205;
 const WIDTH = 450;
@@ -159,6 +160,20 @@ export class Main extends Scene {
             new Message({ message: this.errorMessage, severity: "error" }),
             ...this.getMessages(),
             new Bell(this.bellState),
+            new Text({
+              text: this.manager.state.scale[0].toString(),
+              position: new Vector2(20, 150),
+              font: "12px 'Press Start 2P'",
+              color: "white",
+              positioning: "middle left",
+            }),
+            new Text({
+              text: this.manager.state.scale[1].toString(),
+              position: new Vector2(40, 150),
+              font: "12px 'Press Start 2P'",
+              color: "white",
+              positioning: "middle left",
+            }),
             new Hand(),
             ...this.slots.map((slot) => new Slot(slot)),
             ...this.opponentSlots.map((slot) => new Slot(slot)),
@@ -221,7 +236,7 @@ export class Main extends Scene {
     game.canvasElement.style.cursor = "default";
 
     if (this.manager.state.message) {
-      game.setTimer("clear-message", "10000", () => {
+      game.setTimer("clear-message", "2000", () => {
         this.manager.state.message = "";
       });
     }
@@ -294,7 +309,6 @@ export class Main extends Scene {
         this.liftedCard = id;
         this.liftedDelta = this.mouse.add(card.position.invert());
         cardState.dragging = true;
-
         this.dragStart = this.mouse;
       }
 
@@ -313,7 +327,8 @@ export class Main extends Scene {
       if (
         this.bloodNeeded > 0 &&
         this.sacrifice &&
-        this.manager.getSlot(cardState)?.[0] === "player"
+        this.manager.getSlot(cardState)?.[0] === "player" &&
+        cardState.sacrificed === false
       ) {
         if (game.input.mouseIsDown() && this.lastMouseState === 0) {
           this.bloodNeeded -= 1;

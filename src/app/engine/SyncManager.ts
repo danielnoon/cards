@@ -98,6 +98,7 @@ export class SyncManager {
   listen(event: "begin_initial_turn", callback: CB<InitialTurnData>): Unsub;
   listen(event: "begin_turn", callback: CB<BeginTurnData>): Unsub;
   listen(event: "draw_card", callback: CB<DrawCardData>): Unsub;
+  listen(event: "commit_turn_success", callback: CB<void>): Unsub;
   listen<T>(event: string, callback: CB<T>) {
     return this.events.listen(event, callback);
   }
