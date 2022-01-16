@@ -8,6 +8,7 @@ export const TEST_CARD_0: ICard = {
   health: 1,
   cost_type: "blood",
   cost: 0,
+  sigils: [],
 };
 
 export const TEST_CARD_1: ICard = {
@@ -18,6 +19,7 @@ export const TEST_CARD_1: ICard = {
   health: 2,
   cost_type: "blood",
   cost: 1,
+  sigils: [],
 };
 
 export const TEST_CARD_2: ICard = {
@@ -28,6 +30,7 @@ export const TEST_CARD_2: ICard = {
   health: 1,
   cost_type: "blood",
   cost: 1,
+  sigils: [],
 };
 
 export const TEST_CARD_3: ICard = {
@@ -38,6 +41,7 @@ export const TEST_CARD_3: ICard = {
   health: 2,
   cost_type: "blood",
   cost: 2,
+  sigils: [],
 };
 
 export const TEST_CARD_4: ICard = {
@@ -48,4 +52,5 @@ export const TEST_CARD_4: ICard = {
   health: 3,
   cost_type: "blood",
   cost: 3,
+  sigils: [],
 };

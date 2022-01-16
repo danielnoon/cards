@@ -7,6 +7,8 @@ import { State } from "./State";
 import { enumerate } from "itertools";
 import Action, { PlaceCardAction } from "../types/Action.model";
 import { SyncManager } from "./SyncManager";
+import sigils from "../sigils";
+import { Sigil } from "../types/Sigil.model";
 
 const locations = {
   hand: (slot: number) => new Vector2(100, HAND_CARD_Y),
@@ -115,34 +117,68 @@ export class GameManager {
     if (player === "player") {
       for (const [slot, card] of enumerate(this.state.play.player)) {
         if (card) {
-          card.animateAttack("opponent");
-          const opposingCard = this.state.play.opponent[slot];
+          const sigilData = card.data.sigils
+            .map((sigil) => sigils.get(sigil))
+            .filter((sigil) => (sigil?.onAttack ? true : false)) as Sigil[];
 
-          if (opposingCard) {
-            opposingCard.damage += card.data.attack;
-            if (opposingCard.data.health <= opposingCard.damage) {
-              await opposingCard.animateDeath();
-              this.killCard(opposingCard);
+          if (sigilData.length > 0) {
+            for (const sigil of sigilData) {
+              if (sigil.onAttack) {
+                await sigil.onAttack(this, card, "opponent");
+              }
             }
           } else {
-            this.state.scale[1] += card.data.attack;
+            if (card.data.attack < 0) {
+              return;
+            }
+
+            await card.animateAttack("opponent");
+
+            const opposingCard = this.state.play.opponent[slot];
+
+            if (opposingCard) {
+              opposingCard.damage += card.data.attack;
+              if (opposingCard.data.health <= opposingCard.damage) {
+                await opposingCard.animateDeath();
+                this.killCard(opposingCard);
+              }
+            } else {
+              this.state.scale[1] += card.data.attack;
+            }
           }
         }
       }
     } else {
       for (const [slot, card] of enumerate(this.state.play.opponent)) {
         if (card) {
-          card.animateAttack("player");
-          const opposingCard = this.state.play.player[slot];
+          const sigilData = card.data.sigils
+            .map((sigil) => sigils.get(sigil))
+            .filter((sigil) => (sigil?.onAttack ? true : false)) as Sigil[];
 
-          if (opposingCard) {
-            opposingCard.damage += card.data.attack;
-            if (opposingCard.data.health <= opposingCard.damage) {
-              await opposingCard.animateDeath();
-              this.killCard(opposingCard);
+          if (sigilData.length > 0) {
+            for (const sigil of sigilData) {
+              if (sigil.onAttack) {
+                await sigil.onAttack(this, card, "player");
+              }
             }
           } else {
-            this.state.scale[0] += card.data.attack;
+            if (card.data.attack < 0) {
+              return;
+            }
+
+            await card.animateAttack("player");
+
+            const opposingCard = this.state.play.player[slot];
+
+            if (opposingCard) {
+              opposingCard.damage += card.data.attack;
+              if (opposingCard.data.health <= opposingCard.damage) {
+                await opposingCard.animateDeath();
+                this.killCard(opposingCard);
+              }
+            } else {
+              this.state.scale[0] += card.data.attack;
+            }
           }
         }
       }

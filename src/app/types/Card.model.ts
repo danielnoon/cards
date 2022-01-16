@@ -8,4 +8,5 @@ export default interface ICard {
   health: number;
   cost_type: CostType;
   cost: number;
+  sigils: string[];
 }

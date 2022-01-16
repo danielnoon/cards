@@ -12,7 +12,6 @@ canvas.height = window.innerHeight;
 // Start the game!
 const game = startGame(new Main(), {
   canvas,
-  // debug: true,
 });
 
 window.addEventListener("resize", () => {

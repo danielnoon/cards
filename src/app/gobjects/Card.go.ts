@@ -5,6 +5,7 @@ import Animation from "../anim/Animation";
 import { easeInOutCubic, easeOutCubic } from "../anim/easing";
 import { Tween } from "../anim/Tween";
 import { add, get } from "../image-registry";
+import sigils from "../sigils";
 import ICard from "../types/Card.model";
 
 const FONT = "6px 'Press Start 2P'";
@@ -207,7 +208,6 @@ export class CardState {
             to: this.position.add(new Vector2(0, -5)),
             duration: 50,
             ease: easeInOutCubic,
-            repeat: false,
           }),
           new Tween(this.tweenUpdate, {
             from: this.position.add(new Vector2(0, -5)),
@@ -365,6 +365,15 @@ export class Card extends GObject {
       this.position.x + PADDING,
       this.position.y + PADDING * 4
     );
+
+    if (this.data.sigils[0]) {
+      const sigil = sigils.get(this.data.sigils[0])!;
+      ctx.drawImage(
+        sigil.image,
+        this.position.x + WIDTH / 2 - sigil.image.width / 2,
+        this.position.y + (3 * HEIGHT) / 4 - sigil.image.height / 2
+      );
+    }
 
     ctx.restore();
   }
