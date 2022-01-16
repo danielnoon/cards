@@ -367,12 +367,14 @@ export class Card extends GObject {
     );
 
     if (this.data.sigils[0]) {
-      const sigil = sigils.get(this.data.sigils[0])!;
-      ctx.drawImage(
-        sigil.image,
-        this.position.x + WIDTH / 2 - sigil.image.width / 2,
-        this.position.y + (3 * HEIGHT) / 4 - sigil.image.height / 2
-      );
+      const sigil = sigils.get(this.data.sigils[0]);
+      if (sigil) {
+        ctx.drawImage(
+          sigil.image,
+          this.position.x + WIDTH / 2 - sigil.image.width / 2,
+          this.position.y + (3 * HEIGHT) / 4 - sigil.image.height / 2
+        );
+      }
     }
 
     ctx.restore();

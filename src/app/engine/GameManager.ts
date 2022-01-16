@@ -75,6 +75,10 @@ export class GameManager {
     this.sync.listen("error", ({ message }) => {
       this.state.error = message;
     });
+
+    this.sync.listen("sync", (message) => {
+      console.log(message.data);
+    });
   }
 
   get phase() {
@@ -89,9 +93,12 @@ export class GameManager {
   executePlaceCard = async (action: PlaceCardAction) => {
     if (action.sacrifices.length > 0) {
       for (const sacrifice of action.sacrifices) {
-        this.state.play.opponent[sacrifice]!.sacrificed = true;
-        await this.state.play.opponent[sacrifice]?.animateDeath();
-        this.killCard(this.state.play.opponent[sacrifice]!);
+        const card = this.state.play.opponent[sacrifice];
+        if (card && !card.data.sigils.includes("many_lives")) {
+          card.sacrificed = true;
+          await card.animateDeath();
+          this.killCard(card);
+        }
       }
     }
 
@@ -128,8 +135,8 @@ export class GameManager {
               }
             }
           } else {
-            if (card.data.attack < 0) {
-              return;
+            if (card.data.attack <= 0) {
+              continue;
             }
 
             await card.animateAttack("opponent");
@@ -162,8 +169,8 @@ export class GameManager {
               }
             }
           } else {
-            if (card.data.attack < 0) {
-              return;
+            if (card.data.attack <= 0) {
+              continue;
             }
 
             await card.animateAttack("player");
@@ -284,9 +291,15 @@ export class GameManager {
   }
 
   killCard(card: CardState) {
-    this.state.graveyard.push(card);
-    this.removeCard(card);
-    this.state.bones += 1;
+    const slot = this.getSlot(card);
+    if (slot) {
+      if (slot[0] === "player") {
+        this.state.graveyard.push(card);
+        this.state.bones += 1;
+      }
+
+      this.removeCard(card);
+    }
   }
 
   removeCard(card: CardState) {

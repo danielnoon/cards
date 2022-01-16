@@ -12,6 +12,7 @@ import { GameManager } from "./engine/GameManager";
 import { Message } from "./gobjects/Message.go";
 import { Bell, BellState } from "./gobjects/Bell.go";
 import { Text } from "gamedeck/lib/gobjects/Text";
+import { Status } from "./gobjects/Status.go";
 
 const PLAY_AREA_WIDTH = 205;
 const WIDTH = 450;
@@ -160,6 +161,13 @@ export class Main extends Scene {
             new Message({ message: this.errorMessage, severity: "error" }),
             ...this.getMessages(),
             new Bell(this.bellState),
+            new Status({
+              blood: this.bloodNeeded,
+              bones: this.manager.state.bones,
+              energy: 2,
+              gems: this.manager.state.gems,
+              scale: this.manager.state.scale,
+            }),
             new Text({
               text: this.manager.state.scale[0].toString(),
               position: new Vector2(20, 150),
@@ -349,7 +357,9 @@ export class Main extends Scene {
               .filter((card) => card.sacrificed)
               .forEach((card) => {
                 this.sacrifices.push(this.manager.getSlot(card)![1]);
-                this.manager.removeCard(card);
+                if (!card.data.sigils.includes("many_lives")) {
+                  this.manager.killCard(card);
+                }
               });
           }
         } else {

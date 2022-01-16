@@ -45,6 +45,10 @@ export const BifurcatedStrike: Sigil = {
       const targetCard = state.play[t][target];
       if (targetCard) {
         targetCard.damage += 1;
+        if (targetCard.data.health <= targetCard.damage) {
+          await targetCard.animateDeath();
+          manager.killCard(targetCard);
+        }
       } else {
         state.scale[t === "opponent" ? 1 : 0] += card.data.attack;
       }
@@ -54,6 +58,10 @@ export const BifurcatedStrike: Sigil = {
       const targetCard = state.play[t][target];
       if (targetCard) {
         targetCard.damage += 1;
+        if (targetCard.data.health <= targetCard.damage) {
+          await targetCard.animateDeath();
+          manager.killCard(targetCard);
+        }
       } else {
         state.scale[t === "opponent" ? 1 : 0] += card.data.attack;
       }
@@ -135,3 +143,28 @@ export const TrifurcatedStrike: Sigil = {
 };
 
 sigils.set(TrifurcatedStrike.id, TrifurcatedStrike);
+
+export const Airborne: Sigil = {
+  id: "airborne",
+  name: "Airborne",
+  image: get("assets/sigils/airborne.png"),
+  onAttack: async (manager, card, t) => {
+    const state = manager.state;
+
+    await card.animateAttack(t);
+
+    state.scale[t === "opponent" ? 1 : 0] += card.data.attack;
+
+    return 1;
+  },
+};
+
+sigils.set(Airborne.id, Airborne);
+
+export const ManyLives: Sigil = {
+  id: "many_lives",
+  name: "Many Lives",
+  image: get("assets/sigils/many-lives.png"),
+};
+
+sigils.set(ManyLives.id, ManyLives);

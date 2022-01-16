@@ -33,6 +33,10 @@ interface DrawCardData {
   }[];
 }
 
+interface SyncData {
+  data: any;
+}
+
 type CB<T> = (data: T) => void | Promise<void>;
 
 type Unsub = () => void;
@@ -85,12 +89,14 @@ export class SyncManager {
       this.error = "Error connecting to server";
       this.connecting = false;
       this.waiting = false;
+      clearInterval(this.ping);
     };
     this.socket.onclose = (event) => {
       console.log("Closed:", event);
       this.error = "Connection to server lost.";
       this.connecting = false;
       this.waiting = false;
+      clearInterval(this.ping);
     };
   }
 
@@ -100,6 +106,7 @@ export class SyncManager {
   listen(event: "begin_turn", callback: CB<BeginTurnData>): Unsub;
   listen(event: "draw_card", callback: CB<DrawCardData>): Unsub;
   listen(event: "commit_turn_success", callback: CB<void>): Unsub;
+  listen(event: "sync", callback: CB<SyncData>): Unsub;
   listen<T>(event: string, callback: CB<T>) {
     return this.events.listen(event, callback);
   }
