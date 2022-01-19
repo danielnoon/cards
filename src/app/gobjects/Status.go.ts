@@ -1,6 +1,7 @@
 import { GObject } from "gamedeck/lib/GObject";
 import { Vector2 } from "gamedeck/lib/Utils";
 import { add, get } from "../image-registry";
+import { number, text } from "../text";
 
 add("/assets/bone-count.png");
 
@@ -33,7 +34,13 @@ export class Status extends GObject {
     ctx.textBaseline = "middle";
     // ctx.fillText("Bones: " + bones, 5, 15);
     ctx.drawImage(get("/assets/bone-count.png"), 5, 10);
-    ctx.fillText(bones.toString(), 22, 18);
+    number(bones).draw(ctx, 19, 16, "green");
+
+    // ctx.fillStyle = "#FFFFFF";
+    // ctx.fillRect(0, 25, 200, 40);
+
+    // text("ABCDEFGHIJKLMNOPQRSTUVWXYZ").draw(ctx, 5, 30);
+    // text("abcdefghijklmnopqrstuvwxyz").draw(ctx, 5, 40);
     // ctx.fillText("Blood: " + blood, 5, 30);
     // ctx.fillText(
     //   "Gems: Emerald (" +

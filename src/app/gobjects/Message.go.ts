@@ -1,5 +1,6 @@
 import { GObject } from "gamedeck/lib/GObject";
 import { Vector2 } from "gamedeck/lib/Utils";
+import { text } from "../text";
 
 interface Props {
   message: string;
@@ -20,19 +21,16 @@ export class Message extends GObject {
   public render(ctx: CanvasRenderingContext2D): void {
     ctx.save();
 
-    ctx.fillStyle =
+    const color =
       this.severity === "info"
-        ? "#e3efaf"
+        ? "green"
         : this.severity === "warning"
-        ? "#f9e3af"
-        : "#f9afaf";
-    ctx.font = "8px 'Press Start 2P'";
+        ? "red"
+        : "red";
 
-    const { width, actualBoundingBoxAscent: height } = ctx.measureText(
-      this.message
-    );
+    const { width, height, draw } = text(this.message);
 
-    ctx.fillText(this.message, 450 / 2 - width / 2, height + 10);
+    draw(ctx, 450 / 2 - width / 2, height + 10, color);
 
     ctx.restore();
   }

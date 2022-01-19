@@ -1,4 +1,4 @@
-export type CostType = "blood" | "energy" | "mana";
+export type CostType = "blood" | "energy" | "gems" | "bones";
 
 export default interface ICard {
   id: number;

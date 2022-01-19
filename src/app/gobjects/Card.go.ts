@@ -6,6 +6,13 @@ import { easeInOutCubic, easeOutCubic } from "../anim/easing";
 import { Tween } from "../anim/Tween";
 import { add, get } from "../image-registry";
 import sigils from "../sigils";
+import {
+  number,
+  NUMBER_HEIGHT,
+  NUMBER_WIDTH,
+  text,
+  TEXT_HEIGHT,
+} from "../text";
 import ICard from "../types/Card.model";
 
 const FONT = "6px 'Press Start 2P'";
@@ -294,22 +301,22 @@ export class Card extends GObject {
     ctx.lineTo(this.position.x + WIDTH, this.position.y + HEIGHT / 2);
     ctx.stroke();
 
-    ctx.fillStyle = "black";
-    ctx.font = FONT;
-    ctx.fillText(
-      this.data.attack.toString(),
+    number(this.data.attack).draw(
+      ctx,
       this.position.x + PADDING,
-      this.position.y + this.dimensions.y - PADDING
+      this.position.y + this.dimensions.y - PADDING - NUMBER_HEIGHT,
+      "black"
     );
-
-    const { width: healthWidth } = ctx.measureText(this.data.health.toString());
 
     const health = Math.max(0, this.data.health - this.damage);
 
-    ctx.fillText(
-      health.toString(),
+    const { width: healthWidth, draw: drawHealth } = number(health);
+
+    drawHealth(
+      ctx,
       this.position.x + WIDTH - healthWidth - PADDING,
-      this.position.y + this.dimensions.y - PADDING
+      this.position.y + this.dimensions.y - PADDING - NUMBER_HEIGHT,
+      "black"
     );
 
     if (this.hover && this.animationState === "idle") {
@@ -327,7 +334,15 @@ export class Card extends GObject {
     if (Card.march % 40 === 0) {
       Card.marchShow += 1;
     }
+
     Card.march += 1;
+
+    text(this.data.name).draw(
+      ctx,
+      this.position.x + PADDING,
+      this.position.y + PADDING,
+      "black"
+    );
 
     if (this.data.cost_type === "blood") {
       ctx.scale(0.5, 0.5);
@@ -348,6 +363,23 @@ export class Card extends GObject {
       ctx.scale(2, 2);
     }
 
+    if (this.data.cost_type === "bones") {
+      const { width: costWidth, draw } = number(this.data.cost);
+
+      ctx.drawImage(
+        get("/assets/bone-count.png"),
+        this.position.x + WIDTH - costWidth - 13,
+        this.position.y
+      );
+
+      draw(
+        ctx,
+        this.position.x + WIDTH - NUMBER_WIDTH,
+        this.position.y + 6,
+        "green"
+      );
+    }
+
     if (this.sacrificed) {
       ctx.fillStyle = "#00000099";
       ctx.fillRect(this.position.x, this.position.y, WIDTH, HEIGHT);
@@ -357,14 +389,6 @@ export class Card extends GObject {
         this.position.y + 3
       );
     }
-
-    ctx.font = '5px "Press Start 2P"';
-
-    ctx.fillText(
-      this.data.name,
-      this.position.x + PADDING,
-      this.position.y + PADDING * 4
-    );
 
     if (this.data.sigils[0]) {
       const sigil = sigils.get(this.data.sigils[0]);

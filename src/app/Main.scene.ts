@@ -200,12 +200,14 @@ export class Main extends Scene {
               color: "transparent",
               id: "mouse",
             }),
+            new Background({
+              path: "/assets/scanlines-small.png",
+              alpha: 0.125,
+              scale: 0.125 / 2,
+            }),
           ],
         }),
         new Reset(),
-        new Background({
-          path: "/assets/scanlines.png",
-        }),
       ],
     });
   }
@@ -432,10 +434,6 @@ export class Main extends Scene {
         this.selectSlot = false;
         if (card) {
           if (this.mouse.add(this.dragStart.invert()).getMagnitude() < 10) {
-            if (card.data.cost_type !== "blood") {
-              card.clicked = true;
-              this.selectSlot = true;
-            }
             if (card.data.cost_type === "blood") {
               if (this.manager.hasBlood(card.data.cost)) {
                 card.clicked = true;
@@ -446,6 +444,17 @@ export class Main extends Scene {
                 }
               } else {
                 this.errorMessage = "You don't have enough blood!";
+                game.setTimer("resetError", "2000", () => {
+                  this.errorMessage = "";
+                });
+              }
+            }
+            if (card.data.cost_type === "bones") {
+              if (this.manager.state.bones >= card.data.cost) {
+                card.clicked = true;
+                this.selectSlot = true;
+              } else {
+                this.errorMessage = "You don't have enough bones!";
                 game.setTimer("resetError", "2000", () => {
                   this.errorMessage = "";
                 });
