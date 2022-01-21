@@ -36,17 +36,19 @@ export class Tween<T extends number | Vector2> implements AnimationStep {
   public update(delta: number) {
     if (this.done) return true;
 
-    const progress = this.ease(delta / this.duration);
+    const progress = delta / this.duration;
+
+    const eased = this.ease(progress);
 
     if (this.from instanceof Vector2 && this.to instanceof Vector2) {
       const next = new Vector2(
-        this.from.x + (this.to.x - this.from.x) * progress,
-        this.from.y + (this.to.y - this.from.y) * progress
+        this.from.x + (this.to.x - this.from.x) * eased,
+        this.from.y + (this.to.y - this.from.y) * eased
       );
 
       this.callback(next as T);
     } else if (typeof this.from === "number" && typeof this.to === "number") {
-      const next = this.from + (this.to - this.from) * progress;
+      const next = this.from + (this.to - this.from) * eased;
 
       this.callback(next as T);
     }
@@ -55,6 +57,10 @@ export class Tween<T extends number | Vector2> implements AnimationStep {
 
     if (!this.repeat && done) {
       this.done = true;
+    }
+
+    if (done) {
+      this.callback(this.to as T);
     }
 
     return done;

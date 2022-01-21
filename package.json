@@ -10,6 +10,7 @@
   "author": "author",
   "license": "ISC",
   "dependencies": {
+    "bezier-easing": "^2.1.0",
     "clean-webpack-plugin": "^4.0.0",
     "copy-webpack-plugin": "^10.2.0",
     "gamedeck": "^0.4.0",

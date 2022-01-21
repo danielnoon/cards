@@ -14,14 +14,22 @@ export default class Animation {
   private step = 0;
   private doCancel = false;
   private doPause = false;
+  private lastTime = 0;
 
   constructor(
     private steps: AnimationStep[],
     private config: AnimationConfig = {}
-  ) {}
+  ) {
+    this.init();
+  }
+
+  private now() {
+    return Date.now();
+  }
 
   public init() {
     this.steps.forEach((step) => step.init());
+    this.lastTime = this.now();
   }
 
   public update() {
@@ -42,7 +50,8 @@ export default class Animation {
       this.delta = 0;
       this.step += 1;
     } else {
-      this.delta += 1;
+      this.delta += this.now() - this.lastTime;
+      this.lastTime = this.now();
     }
 
     if (this.step >= this.steps.length) {

@@ -30,28 +30,33 @@ export const BifurcatedStrike: Sigil = {
         await card.animateAttack(t);
 
         if (targetCard) {
-          targetCard.damage += 1;
+          manager.dealDamage(t, target, card.data.attack);
+
           if (targetCard.data.health <= targetCard.damage) {
             await targetCard.animateDeath();
             manager.killCard(targetCard);
           }
         } else {
-          state.scale[t === "opponent" ? 1 : 0] += card.data.attack;
+          manager.dealDamage(t, "direct", card.data.attack);
         }
       }
+
       return 2;
     } else if (slot === 0) {
       const target = slot + 1;
       const targetCard = state.play[t][target];
+
       if (targetCard) {
-        targetCard.damage += 1;
+        manager.dealDamage(t, target, card.data.attack);
+
         if (targetCard.data.health <= targetCard.damage) {
           await targetCard.animateDeath();
           manager.killCard(targetCard);
         }
       } else {
-        state.scale[t === "opponent" ? 1 : 0] += card.data.attack;
+        manager.dealDamage(t, "direct", card.data.attack);
       }
+
       return 1;
     } else {
       const target = slot - 1;
@@ -86,57 +91,66 @@ export const TrifurcatedStrike: Sigil = {
 
     if (slot === 1 || slot === 2) {
       const targets = [slot - 1, slot, slot + 1];
+
       for (const target of targets) {
         const targetCard = state.play[t][target];
 
         await card.animateAttack(t);
 
         if (targetCard) {
-          targetCard.damage += 1;
+          manager.dealDamage(t, target, card.data.attack);
+
           if (targetCard.data.health <= targetCard.damage) {
             await targetCard.animateDeath();
             manager.killCard(targetCard);
           }
         } else {
-          state.scale[t === "opponent" ? 1 : 0] += card.data.attack;
+          manager.dealDamage(t, "direct", card.data.attack);
         }
       }
+
       return 3;
     } else if (slot === 0) {
       const targets = [slot, slot + 1];
+
       for (const target of targets) {
         const targetCard = state.play[t][target];
 
         await card.animateAttack(t);
 
         if (targetCard) {
-          targetCard.damage += 1;
+          manager.dealDamage(t, target, card.data.attack);
+
           if (targetCard.data.health <= targetCard.damage) {
             await targetCard.animateDeath();
             manager.killCard(targetCard);
           }
         } else {
-          state.scale[t === "opponent" ? 1 : 0] += card.data.attack;
+          manager.dealDamage(t, "direct", card.data.attack);
         }
       }
+
       return 2;
     } else {
       const targets = [slot - 1, slot];
+
       for (const target of targets) {
         const targetCard = state.play[t][target];
 
         await card.animateAttack(t);
 
         if (targetCard) {
-          targetCard.damage += 1;
+          manager.dealDamage(t, target, card.data.attack);
+
           if (targetCard.data.health <= targetCard.damage) {
             await targetCard.animateDeath();
             manager.killCard(targetCard);
           }
         } else {
-          state.scale[t === "opponent" ? 1 : 0] += card.data.attack;
+          manager.dealDamage(t, "direct", card.data.attack);
         }
       }
+
       return 3;
     }
   },

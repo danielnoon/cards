@@ -11,13 +11,8 @@ import { Slot, SlotState } from "./gobjects/Slot.go";
 import { GameManager } from "./engine/GameManager";
 import { Message } from "./gobjects/Message.go";
 import { Bell, BellState } from "./gobjects/Bell.go";
-import { Text } from "gamedeck/lib/gobjects/Text";
 import { Status } from "./gobjects/Status.go";
-
-const PLAY_AREA_WIDTH = 205;
-const WIDTH = 450;
-const HEIGHT = 300;
-const SIDEBAR_WIDTH = (WIDTH - PLAY_AREA_WIDTH) / 2;
+import { SIDEBAR_WIDTH, GAME_HEIGHT, GAME_WIDTH } from "./constants";
 
 export class Main extends Scene {
   manager = new GameManager();
@@ -156,7 +151,7 @@ export class Main extends Scene {
         new Normalizer({
           width: game.width,
           height: game.height,
-          ratio: WIDTH / HEIGHT,
+          ratio: GAME_WIDTH / GAME_HEIGHT,
           children: [
             new Message({ message: this.errorMessage, severity: "error" }),
             ...this.getMessages(),
@@ -168,20 +163,6 @@ export class Main extends Scene {
               gems: this.manager.state.gems,
               scale: this.manager.state.scale,
             }),
-            new Text({
-              text: this.manager.state.scale[0].toString(),
-              position: new Vector2(20, 150),
-              font: "12px 'Press Start 2P'",
-              color: "white",
-              positioning: "middle left",
-            }),
-            new Text({
-              text: this.manager.state.scale[1].toString(),
-              position: new Vector2(40, 150),
-              font: "12px 'Press Start 2P'",
-              color: "white",
-              positioning: "middle left",
-            }),
             new Hand(),
             ...this.slots.map((slot) => new Slot(slot)),
             ...this.opponentSlots.map((slot) => new Slot(slot)),
@@ -189,9 +170,9 @@ export class Main extends Scene {
             new Rectangle({
               width: Card.WIDTH,
               height: Card.HEIGHT,
-              x: WIDTH - Card.WIDTH - (Hand.HEIGHT - Card.HEIGHT) / 4,
+              x: GAME_WIDTH - Card.WIDTH - (Hand.HEIGHT - Card.HEIGHT) / 4,
               y: HAND_CARD_Y,
-              color: "red",
+              color: this.manager.phase === "draw" ? "green" : "red",
               id: "deck",
             }),
             new Dot({
@@ -319,7 +300,8 @@ export class Main extends Scene {
         !this.dragging &&
         cardState.selectable &&
         !this.forcePlay &&
-        this.manager.phase === "play"
+        this.manager.phase === "play" &&
+        cardState.animationState === "idle"
       ) {
         this.dragging = true;
         this.liftedCard = id;
@@ -333,7 +315,8 @@ export class Main extends Scene {
         !cardState.clicked &&
         cardState.selectable &&
         !this.forcePlay &&
-        this.manager.phase === "play"
+        this.manager.phase === "play" &&
+        cardState.animationState === "idle"
       ) {
         this.resetHover();
         cardState.hover = true;
@@ -391,7 +374,7 @@ export class Main extends Scene {
     });
 
     game.registerCollision("mouse", "#bell", () => {
-      if (!this.bellState.disabled) {
+      if (!this.bellState.disabled && !this.forcePlay) {
         resetBell = false;
         if (game.input.mouseIsDown() && this.lastMouseState === 0) {
           if (!this.bellState.clicked) {
@@ -453,6 +436,7 @@ export class Main extends Scene {
               if (this.manager.state.bones >= card.data.cost) {
                 card.clicked = true;
                 this.selectSlot = true;
+                this.sacrifice = false;
               } else {
                 this.errorMessage = "You don't have enough bones!";
                 game.setTimer("resetError", "2000", () => {

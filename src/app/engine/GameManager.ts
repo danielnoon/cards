@@ -4,18 +4,20 @@ import { Hand, HAND_CARD_Y } from "../gobjects/Hand.go";
 import ICard from "../types/Card.model";
 import { EventManager } from "./EventManager";
 import { State } from "./State";
-import { enumerate } from "itertools";
+import { enumerate, range } from "itertools";
 import Action, { PlaceCardAction } from "../types/Action.model";
 import { SyncManager } from "./SyncManager";
 import sigils from "../sigils";
 import { Sigil } from "../types/Sigil.model";
+import { SIDEBAR_WIDTH } from "../constants";
+import { Wait } from "../anim/Wait";
 
 const locations = {
   hand: (slot: number) => new Vector2(100, HAND_CARD_Y),
   player: (slot: number) => new Vector2(0, 0),
   opponent: (slot: number) =>
     new Vector2(
-      122.5 + 5 * (1 + slot) + Card.WIDTH * slot,
+      SIDEBAR_WIDTH + 5 * (1 + slot) + Card.WIDTH * slot,
       Hand.Y - Card.HEIGHT * 2 - 10
     ),
 };
@@ -32,6 +34,7 @@ export class GameManager {
   events = new EventManager();
   sync = new SyncManager();
   private actions: Action[] = [];
+  private damageToDeal = 0;
   private get actionExecutors() {
     return new Map([["place_card", this.executePlaceCard]]);
   }
@@ -39,7 +42,7 @@ export class GameManager {
   constructor() {
     this.sync.listen("start", (data) => {
       for (const [n, card] of enumerate(data.hand)) {
-        setTimeout(() => this.addCard(card.id, card.data, "hand"), n * 750);
+        setTimeout(() => this.addCard(card.id, card.data, "hand"), n * 300);
       }
     });
 
@@ -120,6 +123,22 @@ export class GameManager {
     }
   }
 
+  async dealDamage(
+    player: "opponent" | "player",
+    slot: number | "direct",
+    amount: number
+  ) {
+    if (slot === "direct") {
+      this.damageToDeal += amount;
+    } else {
+      const card = this.state.play[player][slot];
+      if (card) {
+        card.damage += amount;
+        await card.animateDamage();
+      }
+    }
+  }
+
   async fight(player: "player" | "opponent") {
     if (player === "player") {
       for (const [slot, card] of enumerate(this.state.play.player)) {
@@ -144,16 +163,22 @@ export class GameManager {
             const opposingCard = this.state.play.opponent[slot];
 
             if (opposingCard) {
-              opposingCard.damage += card.data.attack;
+              await this.dealDamage("opponent", slot, card.data.attack);
+
               if (opposingCard.data.health <= opposingCard.damage) {
                 await opposingCard.animateDeath();
                 this.killCard(opposingCard);
               }
             } else {
-              this.state.scale[1] += card.data.attack;
+              await this.dealDamage("opponent", "direct", card.data.attack);
             }
           }
         }
+      }
+
+      for (const _ of range(this.damageToDeal)) {
+        this.state.scale[1] += 1;
+        await new Wait(400).promise;
       }
     } else {
       for (const [slot, card] of enumerate(this.state.play.opponent)) {
@@ -178,18 +203,26 @@ export class GameManager {
             const opposingCard = this.state.play.player[slot];
 
             if (opposingCard) {
-              opposingCard.damage += card.data.attack;
+              await this.dealDamage("player", slot, card.data.attack);
+
               if (opposingCard.data.health <= opposingCard.damage) {
                 await opposingCard.animateDeath();
                 this.killCard(opposingCard);
               }
             } else {
-              this.state.scale[0] += card.data.attack;
+              await this.dealDamage("player", "direct", card.data.attack);
             }
           }
         }
       }
+
+      for (const _ of range(this.damageToDeal)) {
+        this.state.scale[0] += 1;
+        await new Wait(400).promise;
+      }
     }
+
+    this.damageToDeal = 0;
   }
 
   getValidMoves() {
@@ -203,15 +236,29 @@ export class GameManager {
       if (sacrifices.length < card.data.cost) {
         alert("Not enough blood.");
         return;
-      } else {
-        this.actions.push({
-          type: "place_card",
-          id: card.id,
-          position: slot,
-          sacrifices: sacrifices.slice(),
-          card: card.data,
-        });
       }
+      this.actions.push({
+        type: "place_card",
+        id: card.id,
+        position: slot,
+        sacrifices: sacrifices.slice(),
+        card: card.data,
+      });
+    } else if (card.data.cost_type === "bones") {
+      if (this.state.bones < card.data.cost) {
+        alert("Not enough bones.");
+        return;
+      }
+
+      this.state.bones -= card.data.cost;
+
+      this.actions.push({
+        type: "place_card",
+        id: card.id,
+        position: slot,
+        sacrifices: sacrifices.slice(),
+        card: card.data,
+      });
     }
 
     this.state.play.player[slot] = card;
@@ -227,7 +274,7 @@ export class GameManager {
       for (const [i, card] of enumerate(this.state.hand)) {
         card.moveTo(
           new Vector2(gap + gap * i + cardWidth * i, HAND_CARD_Y),
-          30
+          500
         );
       }
     });
@@ -274,7 +321,7 @@ export class GameManager {
     const gap = (totalWidth - cardWidth * c) / (c + 2);
 
     for (const [i, card] of enumerate(this.state.hand)) {
-      card.moveTo(new Vector2(gap + gap * i + cardWidth * i, HAND_CARD_Y), 30);
+      card.moveTo(new Vector2(gap + gap * i + cardWidth * i, HAND_CARD_Y), 500);
     }
 
     const state = new CardState(

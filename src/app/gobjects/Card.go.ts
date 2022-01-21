@@ -2,20 +2,16 @@ import { GObject } from "gamedeck/lib/GObject";
 import { Vector2 } from "gamedeck/lib/Utils";
 import { range } from "itertools";
 import Animation from "../anim/Animation";
-import { easeInOutCubic, easeOutCubic } from "../anim/easing";
+import { attackStart, easeInOutCubic, easeOutCubic } from "../anim/easing";
 import { Tween } from "../anim/Tween";
+import { Wait } from "../anim/Wait";
+import { GAME_WIDTH } from "../constants";
 import { add, get } from "../image-registry";
 import sigils from "../sigils";
-import {
-  number,
-  NUMBER_HEIGHT,
-  NUMBER_WIDTH,
-  text,
-  TEXT_HEIGHT,
-} from "../text";
+import { number, NUMBER_HEIGHT, NUMBER_WIDTH, text } from "../text";
 import ICard from "../types/Card.model";
+import { Hand } from "./Hand.go";
 
-const FONT = "6px 'Press Start 2P'";
 const PADDING = 2;
 const OUTLINE_WIDTH = 1;
 
@@ -37,6 +33,7 @@ export class CardState {
   public opacity = 1;
   public damage = 0;
   public dead = false;
+  public darkened = false;
 
   constructor(
     public id: number,
@@ -60,7 +57,7 @@ export class CardState {
           new Tween((next) => (this.opacity = next), {
             from: this.opacity,
             to: 0,
-            duration: 20,
+            duration: 160,
           }),
         ],
         {
@@ -73,6 +70,45 @@ export class CardState {
     });
   }
 
+  animateDamage() {
+    this.animation?.cancel();
+
+    this.animation = new Animation(
+      [
+        new Tween(() => (this.darkened = true), {
+          from: this.position,
+          to: new Vector2(this.position.x, this.position.y + 20),
+          duration: 100,
+        }),
+        new Wait(100),
+        new Tween(() => (this.darkened = false), {
+          from: this.position,
+          to: new Vector2(this.position.x, this.position.y + 20),
+          duration: 100,
+        }),
+        new Wait(100),
+        new Tween(() => (this.darkened = true), {
+          from: this.position,
+          to: new Vector2(this.position.x, this.position.y + 20),
+          duration: 100,
+        }),
+        new Wait(100),
+        new Tween(() => (this.darkened = false), {
+          from: this.position,
+          to: new Vector2(this.position.x, this.position.y + 20),
+          duration: 100,
+        }),
+      ],
+      {
+        onFinish: () => {
+          this.animationState = "idle";
+        },
+      }
+    );
+
+    this.animationState = "damage";
+  }
+
   animateFromTop() {
     return new Promise<void>((res) => {
       this.animation = new Animation(
@@ -80,7 +116,7 @@ export class CardState {
           new Tween(this.tweenUpdate, {
             from: new Vector2(this.position.x, -HEIGHT),
             to: this.position,
-            duration: 20,
+            duration: 160,
             ease: easeOutCubic,
           }),
         ],
@@ -99,9 +135,12 @@ export class CardState {
     this.animation = new Animation(
       [
         new Tween(this.tweenUpdate, {
-          from: new Vector2(this.position.x, 450),
+          from: new Vector2(
+            GAME_WIDTH - Card.WIDTH - (Hand.HEIGHT - Card.HEIGHT) / 4,
+            this.position.y
+          ),
           to: this.home,
-          duration: 20,
+          duration: 500,
           ease: easeOutCubic,
         }),
       ],
@@ -129,14 +168,15 @@ export class CardState {
           new Tween(this.tweenUpdate, {
             from: this.position,
             to: new Vector2(this.position.x, this.position.y + mod * 20),
-            duration: 20,
-            ease: easeOutCubic,
+            duration: 500,
+            ease: attackStart,
           }),
+          new Wait(100),
           new Tween(this.tweenUpdate, {
             from: new Vector2(this.position.x, this.position.y + mod * 20),
             to: this.position,
-            duration: 20,
-            ease: easeOutCubic,
+            duration: 400,
+            ease: easeInOutCubic,
           }),
         ],
         {
@@ -187,7 +227,7 @@ export class CardState {
             new Tween(this.tweenUpdate, {
               from: this.position,
               to: this.home,
-              duration: 20,
+              duration: 160,
               ease: easeOutCubic,
             }),
           ],
@@ -206,20 +246,20 @@ export class CardState {
           new Tween(this.tweenUpdate, {
             from: this.position,
             to: this.position.add(new Vector2(0, -10)),
-            duration: 20,
+            duration: 300,
             ease: easeOutCubic,
             repeat: false,
           }),
           new Tween(this.tweenUpdate, {
             from: this.position.add(new Vector2(0, -10)),
             to: this.position.add(new Vector2(0, -5)),
-            duration: 50,
+            duration: 800,
             ease: easeInOutCubic,
           }),
           new Tween(this.tweenUpdate, {
             from: this.position.add(new Vector2(0, -5)),
             to: this.position.add(new Vector2(0, -10)),
-            duration: 50,
+            duration: 800,
             ease: easeInOutCubic,
           }),
         ],
@@ -236,7 +276,7 @@ export class CardState {
         new Tween(this.tweenUpdate, {
           from: this.position,
           to: this.home,
-          duration: 10,
+          duration: 120,
           ease: easeInOutCubic,
         }),
       ]);
