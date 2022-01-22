@@ -163,11 +163,9 @@ export const Airborne: Sigil = {
   name: "Airborne",
   image: get("assets/sigils/airborne.png"),
   onAttack: async (manager, card, t) => {
-    const state = manager.state;
-
     await card.animateAttack(t);
 
-    state.scale[t === "opponent" ? 1 : 0] += card.data.attack;
+    manager.dealDamage(t, "direct", card.data.attack);
 
     return 1;
   },

@@ -6,8 +6,8 @@ export const SIDEBAR_WIDTH = (GAME_WIDTH - PLAY_AREA_WIDTH) / 2;
 export const CARD_HEIGHT = 60;
 
 export const COLORS = {
-  WHITEISH: "#FFC300",
-  GREENISH: "#00FF00",
-  YELLOW: "#FFFF00",
+  WHITEISH: "#e3efaf",
+  GREENISH: "#7b8165",
+  YELLOW: "#ffa22b",
   BACKGROUND: "#000000",
 };

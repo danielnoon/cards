@@ -10,6 +10,8 @@ add("/assets/bone-count.png");
 add("/assets/balance-counter.png");
 add("/assets/balance-bar.png");
 add("/assets/balance-marker.png");
+add("/assets/balance-stand.png");
+add("/assets/balance-weight.png");
 
 interface Props {
   bones: number;
@@ -33,6 +35,8 @@ export class Status extends GObject {
 
     ctx.drawImage(get("/assets/bone-count.png"), 5, 10);
     number(bones).draw(ctx, 19, 16, "green");
+
+    // balance
 
     const score = clamp(scale[1] - scale[0], -5, 5);
 
@@ -66,9 +70,61 @@ export class Status extends GObject {
       balanceData.height
     );
 
+    const stand = get("/assets/balance-stand.png");
+
+    ctx.drawImage(stand, SIDEBAR_WIDTH / 2 - stand.width / 2, 132);
+
+    const weight = get("/assets/balance-weight.png");
+
+    const offsetBase =
+      BALANCE_BOX_Y + BALANCE_BOX_HEIGHT / 2 - balanceData.height / 2;
+
+    ctx.drawImage(
+      weight,
+      SIDEBAR_WIDTH / 2 -
+        balanceData.width / 2 -
+        weight.width / 2 -
+        BALANCE_WEIGHT_OFFSET,
+      offsetBase + (Math.sign(score) < 0 ? DROP_OFFSET[-score] : 0)
+    );
+
+    number(scale[0]).draw(
+      ctx,
+      SIDEBAR_WIDTH / 2 -
+        balanceData.width / 2 -
+        weight.width / 2 -
+        BALANCE_WEIGHT_OFFSET +
+        13,
+      offsetBase + 27 + (Math.sign(score) < 0 ? DROP_OFFSET[-score] : 0),
+      "green"
+    );
+
+    ctx.drawImage(
+      weight,
+      SIDEBAR_WIDTH / 2 +
+        balanceData.width / 2 -
+        weight.width / 2 +
+        BALANCE_WEIGHT_OFFSET,
+      offsetBase + (Math.sign(score) > 0 ? DROP_OFFSET[score] : 0)
+    );
+
+    number(scale[1]).draw(
+      ctx,
+      SIDEBAR_WIDTH / 2 +
+        balanceData.width / 2 -
+        weight.width / 2 +
+        BALANCE_WEIGHT_OFFSET +
+        13,
+      offsetBase + 27 + (Math.sign(score) > 0 ? DROP_OFFSET[score] : 0),
+      "green"
+    );
+
     ctx.restore();
   }
 }
+
+const BALANCE_WEIGHT_OFFSET = 6;
+const DROP_OFFSET = [0, 4, 8, 12, 14, 16];
 
 const BALANCE_COUNTER_Y = 110;
 const BALANCE_MARKER_Y = 102;
@@ -84,9 +140,9 @@ function getBalanceData(score: number) {
   const [y, height] = BALANCE_DATA[Math.abs(score)];
 
   return {
-    x: Math.sign(score) === -1 ? 45 : 0,
+    x: Math.sign(score) === -1 ? 60 : 0,
     y,
-    width: 45,
+    width: 60,
     height,
   };
 }
