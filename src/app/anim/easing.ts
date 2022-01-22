@@ -8,4 +8,4 @@ export function easeOutCubic(x: number): number {
   return 1 - Math.pow(1 - x, 3);
 }
 
-export const attackStart = BezierEasing(0.8, -0.8, 0.75, 1);
+export const attackStart = BezierEasing(0.8, -0.8, 0.9, 1);

@@ -6,7 +6,7 @@ import { attackStart, easeInOutCubic, easeOutCubic } from "../anim/easing";
 import { Tween } from "../anim/Tween";
 import { Wait } from "../anim/Wait";
 import { GAME_WIDTH } from "../constants";
-import { add, get } from "../image-registry";
+import { add, get, has } from "../image-registry";
 import sigils from "../sigils";
 import { number, NUMBER_HEIGHT, NUMBER_WIDTH, text } from "../text";
 import ICard from "../types/Card.model";
@@ -21,6 +21,7 @@ const dimensions = new Vector2(WIDTH, HEIGHT);
 
 add("/assets/blood.png");
 add("/assets/sac.png");
+add("/assets/creatures/squirrel.png");
 
 export class CardState {
   public hover = false;
@@ -116,7 +117,7 @@ export class CardState {
           new Tween(this.tweenUpdate, {
             from: new Vector2(this.position.x, -HEIGHT),
             to: this.position,
-            duration: 160,
+            duration: 300,
             ease: easeOutCubic,
           }),
         ],
@@ -167,15 +168,27 @@ export class CardState {
         [
           new Tween(this.tweenUpdate, {
             from: this.position,
-            to: new Vector2(this.position.x, this.position.y + mod * 20),
-            duration: 500,
+            to: new Vector2(this.position.x, this.position.y + mod * 15),
+            duration: 400,
             ease: attackStart,
           }),
-          new Wait(100),
+          new Wait(200),
           new Tween(this.tweenUpdate, {
-            from: new Vector2(this.position.x, this.position.y + mod * 20),
+            from: new Vector2(this.position.x, this.position.y + mod * 15),
+            to: this.position.add(new Vector2(0, mod * -5)),
+            duration: 300,
+            ease: easeInOutCubic,
+          }),
+          new Tween(this.tweenUpdate, {
+            from: this.position.add(new Vector2(0, mod * -2)),
+            to: this.position.add(new Vector2(0, mod * 2)),
+            duration: 100,
+            ease: easeInOutCubic,
+          }),
+          new Tween(this.tweenUpdate, {
+            from: this.position.add(new Vector2(0, mod * 2)),
             to: this.position,
-            duration: 400,
+            duration: 100,
             ease: easeInOutCubic,
           }),
         ],
@@ -333,6 +346,21 @@ export class Card extends GObject {
     ctx.fillStyle = "#7b8165";
     ctx.fillRect(this.position.x, this.position.y, WIDTH, HEIGHT / 2);
 
+    if (has(`/assets/creatures/${this.data.name.toLowerCase()}.png`)) {
+      ctx.drawImage(
+        get(`/assets/creatures/${this.data.name.toLowerCase()}.png`),
+        this.position.x,
+        this.position.y
+      );
+    } else {
+      text(this.data.name).draw(
+        ctx,
+        this.position.x + PADDING,
+        this.position.y + PADDING,
+        "black"
+      );
+    }
+
     ctx.strokeStyle = "black";
     ctx.lineWidth = OUTLINE_WIDTH;
     ctx.strokeRect(this.position.x, this.position.y, WIDTH, HEIGHT);
@@ -376,13 +404,6 @@ export class Card extends GObject {
     }
 
     Card.march += 1;
-
-    text(this.data.name).draw(
-      ctx,
-      this.position.x + PADDING,
-      this.position.y + PADDING,
-      "black"
-    );
 
     if (this.data.cost_type === "blood") {
       ctx.scale(0.5, 0.5);

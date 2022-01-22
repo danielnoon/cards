@@ -15,3 +15,7 @@ export function get(path: string): HTMLImageElement {
 
   return REGISTRY.get(path)!;
 }
+
+export function has(path: string): boolean {
+  return REGISTRY.has(path);
+}
