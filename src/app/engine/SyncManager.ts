@@ -2,7 +2,7 @@ import Action from "../types/Action.model";
 import ICard from "../types/Card.model";
 import { EventManager } from "./EventManager";
 
-const WS_ENDPOINT_PROD = "wss://cards-scrypt-server.herokuapp.com";
+const WS_ENDPOINT_PROD = "wss://cards-scrypt-server.fly.dev/";
 const WS_ENDPOINT_DEV = "ws://localhost:3000";
 const PING_INTERVAL = 5000;
 
